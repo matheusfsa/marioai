@@ -1,6 +1,6 @@
 import numpy as np
 
-__all__ = ["extractObservation"]
+__all__ = ['extractObservation']
 
 
 powsof2 = (
@@ -40,11 +40,7 @@ def decode(estate):
     reqSize = 31
     assert (
         len(estate) == reqSize
-    ), "Error in data size given %d! Required: %d \n data: %s " % (
-        len(estate),
-        reqSize,
-        estate,
-    )
+    ), f'Error in data size given {len(estate)}! Required: {reqSize} \n data: {estate}'
     check_sum = 0
     for i in range(len(estate)):
         cur_char = estate[i]
@@ -62,7 +58,7 @@ def decode(estate):
             col += 1
             if totalBitsDecoded == 484:
                 break
-    print(f"totalBitsDecoded: {totalBitsDecoded}")
+    print(f'totalBitsDecoded: {totalBitsDecoded}')
     return dstate, check_sum
 
 
@@ -71,21 +67,21 @@ def extractObservation(data: bytes):
     parse the array of strings and return array 22 by 22 of doubles
     """
     data = data.decode()
-    obsLength = 487
+    # observation lenght: 487
     levelScene = np.empty(shape=(22, 22), dtype=np.int)
     enemiesFloats = []
     dummy = 0
-    if data[0] == "E":
-        mayMarioJump = data[1] == "1"
-        isMarioOnGround = data[2] == "1"
+    if data[0] == 'E':
+        mayMarioJump = data[1] == '1'
+        isMarioOnGround = data[2] == '1'
         levelScene, check_sum_got = decode(data[3:34])
         check_sum_recv = int(data[34:])
         if check_sum_got != check_sum_recv:
-            print(f"Error check_sum! got {check_sum_got} != recv {check_sum_recv}")
+            print(f'Error check_sum! got {check_sum_got} != recv {check_sum_recv}')
 
         return (mayMarioJump, isMarioOnGround, levelScene)
-    data = data.split(" ")
-    if data[0] == "FIT":
+    data = data.split(' ')
+    if data[0] == 'FIT':
         status = int(data[1])
         distance = float(data[2])
         timeLeft = int(data[3])
@@ -94,9 +90,9 @@ def extractObservation(data: bytes):
 
         return status, distance, timeLeft, marioMode, coins
 
-    elif data[0] == "O":
-        mayMarioJump = data[1] == "true"
-        isMarioOnGround = data[2] == "true"
+    elif data[0] == 'O':
+        mayMarioJump = data[1] == 'true'
+        isMarioOnGround = data[2] == 'true'
         k = 0
         for i in range(22):
             for j in range(22):
@@ -128,4 +124,4 @@ def extractObservation(data: bytes):
         )
 
     else:
-        raise ValueError("Wrong format or corrupted observation...")
+        raise ValueError('Wrong format or corrupted observation...')

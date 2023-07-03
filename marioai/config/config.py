@@ -69,8 +69,8 @@ class ConfigLoader(AbstractConfigLoader):
         env: str = None,
         runtime_params: Dict[str, Any] = None,
         *,
-        base_env: str = "base",
-        default_run_env: str = "local",
+        base_env: str = 'base',
+        default_run_env: str = 'local',
     ):
         """Instantiates a ``ConfigLoader``.
 

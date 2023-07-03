@@ -1,7 +1,7 @@
 # pylint: disable=logging-fstring-interpolation
 import logging
 
-from stable_baselines3 import A2C, DQN
+from stable_baselines3 import DQN
 
 import marioai.agents as agents
 import marioai.core as core
@@ -10,11 +10,12 @@ import click
 
 logger = logging.getLogger(__name__)
 environment_options = [
-    click.option('--level_difficulty', '-ld','level_difficulty', default=0, type=int),
+    click.option('--level_difficulty', '-ld', 'level_difficulty', default=0, type=int),
     click.option('--mario_mode', '-mm', 'mario_mode', default=0, type=int),
     click.option('--time_limit', '-tl', 'time_limit', default=0, type=int),
     click.option('--max_fps', '-fps', 'max_fps', default=720, type=int),
 ]
+
 
 def add_options(options):
     def _add_options(func):
@@ -23,9 +24,11 @@ def add_options(options):
         return func
     return _add_options
 
+
 @click.group()
 def cli():
-  pass
+    pass
+
 
 @click.command(name='mc')
 @add_options(environment_options)
@@ -64,13 +67,13 @@ def dqn_model(
     log_interval: int,
 ):
     env = MarioEnv(
-        level_difficulty=level_difficulty, 
-        mario_mode=mario_mode, 
-        time_limit=time_limit, 
+        level_difficulty=level_difficulty,
+        mario_mode=mario_mode,
+        time_limit=time_limit,
         max_fps=max_fps
     )
     model = DQN(
-        "MlpPolicy", env, verbose=1,
+        'MlpPolicy', env, verbose=1,
         learning_rate=0.0001, buffer_size=1000000,
         learning_starts=50000, batch_size=32, tau=1.0,
         gamma=0.99, train_freq=4, gradient_steps=1, target_update_interval=10000,
@@ -78,6 +81,7 @@ def dqn_model(
         exploration_final_eps=0.05, max_grad_norm=10)
     model.learn(total_timesteps=total_timesteps, log_interval=log_interval)
     env.close()
+
 
 @click.command(name='random')
 @add_options(environment_options)
@@ -88,17 +92,17 @@ def random_agent(
     max_fps: int,
 ):
     env = MarioEnv(
-        level_difficulty=level_difficulty, 
-        mario_mode=mario_mode, 
-        time_limit=time_limit, 
+        level_difficulty=level_difficulty,
+        mario_mode=mario_mode,
+        time_limit=time_limit,
         max_fps=max_fps
     )
-    observation = env.reset()
+    _ = env.reset()
     for _ in range(10000):
-        action = env.action_space.sample()  # User-defined policy function
-        observation, reward, done, info = env.step(action)
+        action = env.action_space.sample()
+        _, _, done, _ = env.step(action)
         if done:
-            observation = env.reset()
+            _ = env.reset()
     env.close()
 
 
@@ -106,5 +110,5 @@ cli.add_command(monte_carlo)
 cli.add_command(dqn_model)
 cli.add_command(random_agent)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     cli()

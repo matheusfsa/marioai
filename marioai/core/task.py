@@ -2,7 +2,7 @@ import numpy as np
 
 import marioai.core as core
 
-__all__ = ["Task"]
+__all__ = ['Task']
 
 
 class Task(object):
@@ -46,11 +46,11 @@ class Task(object):
         self.cum_reward = 0
         self.samples = 0
         self.reward = {
-            "status": 0,
-            "distance": 0,
-            "timeLeft": 0,
-            "marioMode": 0,
-            "coins": 0,
+            'status': 0,
+            'distance': 0,
+            'timeLeft': 0,
+            'marioMode': 0,
+            'coins': 0,
         }
         self._action_pool = np.array(
             [
@@ -72,13 +72,13 @@ class Task(object):
             ]
         )
         self.objects = {
-            "soft": [
+            'soft': [
                 -11,
             ],
-            "hard": [20, -10],
-            "enemy": [2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15],
-            "brick": [16, 21],
-            "projetil": [25],
+            'hard': [20, -10],
+            'enemy': [2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15],
+            'brick': [16, 21],
+            'projetil': [25],
         }
 
     def reset(self):
@@ -90,17 +90,17 @@ class Task(object):
         self.finished = False
         self.status = 0
         self.reward = {
-            "status": 0,
-            "distance": 0,
-            "timeLeft": 0,
-            "marioMode": 0,
-            "coins": 0,
+            'status': 0,
+            'distance': 0,
+            'timeLeft': 0,
+            'marioMode': 0,
+            'coins': 0,
         }
 
     def filter_actions(self) -> np.array:
         """This function filter the action pool"""
         action_pool = np.copy(self._action_pool)
-        if not self.state["can_jump"]:
+        if not self.state['can_jump']:
             action_pool = action_pool[action_pool[:, 3] == 0]
         return action_pool
 
@@ -113,11 +113,11 @@ class Task(object):
         self.state = self.build_state(sense)
         if len(sense) == self.env.fitness_values:
             reward_data = {
-                "status": sense[0],
-                "distance": sense[1],
-                "timeLeft": sense[2],
-                "marioMode": sense[3],
-                "coins": sense[4],
+                'status': sense[0],
+                'distance': sense[1],
+                'timeLeft': sense[2],
+                'marioMode': sense[3],
+                'coins': sense[4],
             }
             self.reward = self.compute_reward(reward_data)
             self.status = sense[0]
@@ -134,46 +134,46 @@ class Task(object):
 
         if not self.finished:
             self.env.perform_action(action)
-            self.cum_reward += self.reward["distance"]
+            self.cum_reward += self.reward['distance']
             self.samples += 1
 
     def build_state(self, sense):
         """Build state from level scene"""
         state_vars = [
-            "can_jump",
-            "on_ground",
-            "mario_floats",
-            "enemies_floats",
-            "level_scene",
+            'can_jump',
+            'on_ground',
+            'mario_floats',
+            'enemies_floats',
+            'level_scene',
         ]
         state = {}
         if len(sense) == 6:
             for var, value in zip(state_vars, sense[:5]):
                 state[var] = value
-            state["episode_over"] = False
+            state['episode_over'] = False
         else:
             for var in state_vars:
                 state[var] = None
-            state["episode_over"] = True
+            state['episode_over'] = True
 
         ground_pos = (
-            self._get_ground(state["level_scene"], state["on_ground"])
-            if not state["episode_over"]
+            self._get_ground(state['level_scene'], state['on_ground'])
+            if not state['episode_over']
             else None
         )
 
         for o_name, o_values in self.objects.items():
             for dist in range(1, self.max_dist + 1):
-                state[f"{o_name}_{dist}"] = (
-                    self._is_near(state["level_scene"], o_values, dist)
-                    if not state["episode_over"]
+                state[f'{o_name}_{dist}'] = (
+                    self._is_near(state['level_scene'], o_values, dist)
+                    if not state['episode_over']
                     else None
                 )
 
         for dist in range(1, self.max_dist + 1):
-            state[f"has_role_near_{dist}"] = (
-                self._has_role(state["level_scene"], ground_pos, dist)
-                if not state["episode_over"]
+            state[f'has_role_near_{dist}'] = (
+                self._has_role(state['level_scene'], ground_pos, dist)
+                if not state['episode_over']
                 else None
             )
 

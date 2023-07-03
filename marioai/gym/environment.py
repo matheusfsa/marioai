@@ -4,7 +4,7 @@ from gym import spaces
 
 from ..core import Environment
 
-__all__ = ["MarioEnv"]
+__all__ = ['MarioEnv']
 
 ACTIONS = [
     # [backward, forward, crouch, jump, speed/bombs]
@@ -44,15 +44,6 @@ class MarioEnv(gym.Env):
     ):
         self._env = Environment()
         self.max_fps = max_fps
-        """
-        self.observation_space = spaces.Dict(
-            {
-                "level_scene": spaces.Box(low=0, high=26, shape=LEVEL_SHAPE),
-                "can_jump": spaces.Discrete(2),
-                "on_ground": spaces.Discrete(2),
-            }
-        )
-        """
         self.observation_space = spaces.Box(low=0, high=26, shape=LEVEL_SHAPE)
         self.action_space = spaces.Discrete(len(ACTIONS))
         self.mario_pos = 0
@@ -70,23 +61,23 @@ class MarioEnv(gym.Env):
 
     def _get_info(self, sense):
         if len(sense) == 6:
-            return {"distance": sense[2][0]}
+            return {'distance': sense[2][0]}
         else:
-            return {"distance": sense[1]}
+            return {'distance': sense[1]}
 
     def build_state(self, sense):
         """Build state from level scene"""
         state_vars = [
-            "can_jump",
-            "on_ground",
-            "mario_floats",
-            "enemies_floats",
-            "level_scene",
+            'can_jump',
+            'on_ground',
+            'mario_floats',
+            'enemies_floats',
+            'level_scene',
         ]
         state = {}
         if len(sense) == 6:
             for var, value in zip(state_vars, sense[:5]):
-                if var == "level_scene":
+                if var == 'level_scene':
                     value[value == 25] = 22
                     value[value == -11] = 23
                     value[value == -10] = 24
@@ -97,21 +88,20 @@ class MarioEnv(gym.Env):
             for var in state_vars:
                 state[var] = 0
             self.finished = True
-            state["level_scene"] = np.zeros(LEVEL_SHAPE)
+            state['level_scene'] = np.zeros(LEVEL_SHAPE)
 
         return state
 
     def reset(self):
         self._env.reset()
-        sense = self._env.get_sensors()
+        self._env.get_sensors()
         self.finished = False
-        # self._env.perform_action(ACTIONS[0])
         observation = {
-            "level_scene": np.zeros(LEVEL_SHAPE),
-            "can_jump": 0,
-            "on_ground": 0,
+            'level_scene': np.zeros(LEVEL_SHAPE),
+            'can_jump': 0,
+            'on_ground': 0,
         }
-        return observation["level_scene"]
+        return observation['level_scene']
 
     def step(self, action):
         self._env.perform_action(ACTIONS[action])
@@ -120,21 +110,21 @@ class MarioEnv(gym.Env):
         info = self._get_info(sense)
         if self.finished:
             reward_data = {
-                "status": sense[0],
-                "distance": sense[1],
-                "timeLeft": sense[2],
-                "marioMode": sense[3],
-                "coins": sense[4],
+                'status': sense[0],
+                'distance': sense[1],
+                'timeLeft': sense[2],
+                'marioMode': sense[3],
+                'coins': sense[4],
             }
             reward = self.compute_reward(reward_data)
         else:
             reward = self.compute_reward(observation)
-        return observation["level_scene"], reward, self.finished, info
+        return observation['level_scene'], reward, self.finished, info
 
     def compute_reward(self, reward_data):
         """Function that compute reward"""
-        if "distance" in reward_data:
-            return reward_data["distance"]
+        if 'distance' in reward_data:
+            return reward_data['distance']
         return 0
 
     def close(self):

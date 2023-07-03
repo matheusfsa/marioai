@@ -12,13 +12,13 @@ from yaml.parser import ParserError
 from .abstract_config import BadConfigException, MissingConfigException
 
 SUPPORTED_EXTENSIONS = [
-    ".yml",
-    ".yaml",
-    ".json",
-    ".ini",
-    ".pickle",
-    ".properties",
-    ".xml",
+    '.yml',
+    '.yaml',
+    '.json',
+    '.ini',
+    '.pickle',
+    '.properties',
+    '.xml',
 ]
 _config_logger = logging.getLogger(__name__)
 
@@ -56,8 +56,8 @@ def _get_config_from_patterns(
 
     if not patterns:
         raise ValueError(
-            "`patterns` must contain at least one glob "
-            "pattern to match config filenames against."
+            '`patterns` must contain at least one glob '
+            'pattern to match config filenames against.'
         )
 
     config = {}  # type: Dict[str, Any]
@@ -66,8 +66,8 @@ def _get_config_from_patterns(
     for conf_path in conf_paths:
         if not Path(conf_path).is_dir():
             raise ValueError(
-                f"Given configuration path either does not exist "
-                f"or is not a valid directory: {conf_path}"
+                f'Given configuration path either does not exist '
+                f'or is not a valid directory: {conf_path}'
             )
 
         config_filepaths = _lookup_config_filepaths(
@@ -79,10 +79,10 @@ def _get_config_from_patterns(
 
         common_keys = config.keys() & new_conf.keys()
         if common_keys:
-            sorted_keys = ", ".join(sorted(common_keys))
+            sorted_keys = ', '.join(sorted(common_keys))
             msg = (
-                "Config from path `%s` will override the following "
-                "existing top-level config keys: %s"
+                'Config from path `%s` will override the following '
+                'existing top-level config keys: %s'
             )
             _config_logger.info(msg, conf_path, sorted_keys)
 
@@ -91,8 +91,8 @@ def _get_config_from_patterns(
 
     if not processed_files:
         raise MissingConfigException(
-            f"No files found in {conf_paths} matching the glob "
-            f"pattern(s): {patterns}"
+            f'No files found in {conf_paths} matching the glob '
+            f'pattern(s): {patterns}'
         )
     return config
 
@@ -118,12 +118,12 @@ def _load_config_file(config_file: Path, ac_template: bool = False) -> Dict[str,
 
     try:
         # Default to UTF-8, which is Python 3 default encoding, to decode the file
-        with open(config_file, encoding="utf8") as yml:
-            _config_logger.debug("Loading config file: '%s'", config_file)
+        with open(config_file, encoding='utf8') as yml:
+            _config_logger.debug('Loading config file: "%s"', config_file)
             return {
                 k: v
                 for k, v in anyconfig.load(yml, ac_template=ac_template).items()
-                if not k.startswith("_")
+                if not k.startswith('_')
             }
     except AttributeError as exc:
         raise BadConfigException(f"Couldn't load config file: {config_file}") from exc
@@ -132,7 +132,7 @@ def _load_config_file(config_file: Path, ac_template: bool = False) -> Dict[str,
         line = exc.problem_mark.line
         cursor = exc.problem_mark.column
         raise ParserError(
-            f"Invalid YAML file {config_file}, unable to read line {line}, position {cursor}."
+            f'Invalid YAML file {config_file}, unable to read line {line}, position {cursor}.'
         ) from exc
 
 
@@ -179,8 +179,8 @@ def _lookup_config_filepaths(
     seen_files = config_files & processed_files
     if seen_files:
         logger.warning(
-            "Config file(s): %s already processed, skipping loading...",
-            ", ".join(str(seen) for seen in sorted(seen_files)),
+            'Config file(s): %s already processed, skipping loading...',
+            ', '.join(str(seen) for seen in sorted(seen_files)),
         )
         config_files -= seen_files
 
@@ -195,8 +195,8 @@ def _remove_duplicates(items: Iterable[str]):
             unique_items.append(item)
         else:
             warn(
-                f"Duplicate environment detected! "
-                f"Skipping re-loading from configuration path: {item}"
+                f'Duplicate environment detected! '
+                f'Skipping re-loading from configuration path: {item}'
             )
     return unique_items
 
@@ -210,14 +210,14 @@ def _check_duplicate_keys(
         overlapping_keys = conf.keys() & keys
 
         if overlapping_keys:
-            sorted_keys = ", ".join(sorted(overlapping_keys))
+            sorted_keys = ', '.join(sorted(overlapping_keys))
             if len(sorted_keys) > 100:
-                sorted_keys = sorted_keys[:100] + "..."
-            duplicates.append(f"{processed_file}: {sorted_keys}")
+                sorted_keys = sorted_keys[:100] + '...'
+            duplicates.append(f'{processed_file}: {sorted_keys}')
 
     if duplicates:
-        dup_str = "\n- ".join(duplicates)
-        raise ValueError(f"Duplicate keys found in {filepath} and:\n- {dup_str}")
+        dup_str = '\n- '.join(duplicates)
+        raise ValueError(f'Duplicate keys found in {filepath} and:\n- {dup_str}')
 
 
 def _path_lookup(conf_path: Path, patterns: Iterable[str]) -> Set[Path]:
@@ -236,7 +236,7 @@ def _path_lookup(conf_path: Path, patterns: Iterable[str]) -> Set[Path]:
     conf_path = conf_path.resolve()
 
     for pattern in patterns:
-        # `Path.glob()` ignores the files if pattern ends with "**",
+        # `Path.glob()` ignores the files if pattern ends with '**',
         # therefore iglob is used instead
         for each in iglob(str(conf_path / pattern), recursive=True):
             path = Path(each).resolve()
