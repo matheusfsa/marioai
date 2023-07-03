@@ -1,7 +1,4 @@
-__all__ = ["Agent"]
-
-
-class Agent(object):
+class Agent:
     """Base class for an autonomous agent.
 
     Attributes:
@@ -31,12 +28,12 @@ class Agent(object):
     def sense(self, state):
         """Receive sense."""
 
-        self.episode_over = state["episode_over"]
-        self.can_jump = state["can_jump"]
-        self.on_ground = state["on_ground"]
-        self.mario_floats = state["mario_floats"]
-        self.enemies_floats = state["enemies_floats"]
-        self.level_scene = state["level_scene"]
+        self.episode_over = state['episode_over']
+        self.can_jump = state['can_jump']
+        self.on_ground = state['on_ground']
+        self.mario_floats = state['mario_floats']
+        self.enemies_floats = state['enemies_floats']
+        self.level_scene = state['level_scene']
 
     def act(self):
         """Return an action."""

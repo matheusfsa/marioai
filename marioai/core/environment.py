@@ -1,18 +1,13 @@
 import logging
-import os
-import signal
 import socket
 import subprocess
-import sys
 import time
 from pathlib import Path
 
 from .utils import extractObservation
 
-__all__ = ["Environment"]
 
-
-class Environment(object):
+class Environment:
     """Interface to the MarioAI simulator.
 
     Attributes:
@@ -36,12 +31,17 @@ class Environment(object):
         or not.
     """
 
-    def __init__(self, name="Unnamed agent", host="localhost", port=4242):
+    def __init__(
+        self,
+        name: str = 'Unnamed agent',
+        host: str = 'localhost',
+        port: int = 4242
+    ):
         """Constructor.
 
         Args:
-          name (str): the bot's name, defaults to "Unnamed agent".
-          host (str): the server address, defaults to "localhost".
+          name (str): the bot's name, defaults to 'Unnamed agent'.
+          host (str): the server address, defaults to 'localhost'.
           port (int): the server address, defaults to 4242.
         """
         self.level_difficulty = 0
@@ -53,38 +53,37 @@ class Environment(object):
         self.fast_tcp = False
 
         self.visualization = True
-        self.custom_args = ""
+        self.custom_args = ''
         self.fitness_values = 5
 
         self._server_process = None
-        self._tcpclient = self._run_server(name, host, port)
-        # self._tcpclient = TCPClient(name, host, port)
-        # self._tcpclient.connect()
+        self._tcpclient = self._run_server()
 
     def _check_java(self):
         try:
             print('Checking if Java is installed...')
-            p = subprocess.Popen(['java', '-version'],
-            stdout = subprocess.PIPE,
-            stderr = subprocess.STDOUT)
+            p = subprocess.Popen(
+                ['java', '-version'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT
+            )
             out = list(iter(p.stdout.readline, b''))
             print(f"Java version: {out[0].decode('ascii')}")
         except FileNotFoundError:
             raise EnvironmentError('Java is not installed!')
-        
-    def _run_server(self, name, host, port):
-        print(os.getcwd())
+
+    def _run_server(self):
         self._check_java()
         source_path = Path(__file__).resolve()
         source_dir = source_path.parent
         self._server_process = subprocess.Popen(
-            ["nohup", "java", "ch.idsia.scenarios.MainRun", "-server", "on"],
-            cwd=source_dir / "server",
+            ['nohup', 'java', 'ch.idsia.scenarios.MainRun', '-server', 'on'],
+            cwd=source_dir / 'server',
             stdout=open(
-                source_dir / "server/tmp/server_logOut.log", "w", encoding="utf-8"
+                source_dir / 'server/tmp/server_logOut.log', 'w', encoding='utf-8'
             ),
             stderr=open(
-                source_dir / "server/tmp/server_logErr.log", "w", encoding="utf-8"
+                source_dir / 'server/tmp/server_logErr.log', 'w', encoding='utf-8'
             ),
         )
         connections_attempts = 5
@@ -92,8 +91,8 @@ class Environment(object):
         game_is_down = True
         while game_is_down:
             try:
-                print(f"Connection attempt: {attempt}/{connections_attempts}")
-                client = TCPClient(name, host, port)
+                print(f'Connection attempt: {attempt}/{connections_attempts}')
+                client = TCPClient(self.name, self.host, self.port)
                 client.connect()
                 game_is_down = False
                 return client
@@ -108,6 +107,7 @@ class Environment(object):
         return self._tcpclient.connected
 
     def disconnect(self):
+        """Disconnect from server"""
         self._tcpclient.disconnect()
         self._server_process.kill()
 
@@ -119,14 +119,14 @@ class Environment(object):
         """
         data = self._tcpclient.recvData()
 
-        if data == "ciao":
+        if data == 'ciao':
             self._tcpclient.disconnect()
 
         elif len(data) > 5:
             return extractObservation(data)
 
         else:
-            logging.warning(f"[ENVIRONMENT] Unexpected received data: {data}")
+            logging.warning(f'[ENVIRONMENT] Unexpected received data: {data}')
             raise EnvironmentError('Unexpected received data from server')
 
     def perform_action(self, action):
@@ -149,39 +149,39 @@ class Environment(object):
           action (list): a list of integers.
         """
 
-        action_str = ""
+        action_str = ''
         for i in range(5):
             if action[i] == 1:
-                action_str += "1"
+                action_str += '1'
 
             elif action[i] == 0:
-                action_str += "0"
+                action_str += '0'
 
             else:
-                raise ValueError("something very dangerous happen....")
+                raise ValueError('something very dangerous happen....')
 
-        action_str += "\r\n"
+        action_str += '\r\n'
         self._tcpclient.send_data(str.encode(action_str))
 
     def reset(self):
         """Resets the simulator and configure it according to the variables set
         here."""
 
-        argstring = f"-ld {self.level_difficulty} -lt {self.level_type} -mm {self.init_mario_mode} -ls {self.level_seed} -tl {self.time_limit} "
+        argstring = f'-ld {self.level_difficulty} -lt {self.level_type} -mm {self.init_mario_mode} -ls {self.level_seed} -tl {self.time_limit} '
         if self.creatures_enabled:
-            argstring += "-pw off "
+            argstring += '-pw off '
         else:
-            argstring += "-pw on "
+            argstring += '-pw on '
 
         if self.visualization:
-            argstring += "-vis on "
+            argstring += '-vis on '
         else:
-            argstring += "-vis off "
+            argstring += '-vis off '
 
         if self.fast_tcp:
-            argstring += "-fastTCP on"
+            argstring += '-fastTCP on'
         self._tcpclient.send_data(
-            str.encode("reset -maxFPS on " + argstring + self.custom_args + "\r\n")
+            str.encode('reset -maxFPS on ' + argstring + self.custom_args + '\r\n')
         )
 
 
@@ -197,12 +197,12 @@ class TCPClient(object):
       buffer_size (int): the buffer size.
     """
 
-    def __init__(self, name="", host="localhost", port=4242):
+    def __init__(self, name='', host='localhost', port=4242):
         """Constructor.
 
         Args:
           name (str): the bot's name.
-          host (str): the server address, defaults to "localhost".
+          host (str): the server address, defaults to 'localhost'.
           port (int): the server address, defaults to 4242.
         """
 
@@ -223,16 +223,16 @@ class TCPClient(object):
 
         h, p = self.host, self.port
 
-        logging.info(f"[TCPClient] trying to connect to {h}:{p}")
+        logging.info(f'[TCPClient] trying to connect to {h}:{p}')
         self.sock = socket.socket()
 
         self.sock.connect((h, p))
-        logging.info(f"[TCPClient] connection to {h}:{p} succeeded")
+        logging.info(f'[TCPClient] connection to {h}:{p} succeeded')
 
         data = self.recvData()
-        logging.info(f"[TCPClient] greetings received: {data}")
+        logging.info(f'[TCPClient] greetings received: {data}')
 
-        message = f"Client: Dear Server, hello! I am {self.name}\r\n"
+        message = f'Client: Dear Server, hello! I am {self.name}\r\n'
         self.send_data(str.encode(message))
 
         self.connected = True
@@ -242,7 +242,7 @@ class TCPClient(object):
 
         self.sock.close()
         self.connected = False
-        logging.info("[TCPClient] client disconnected")
+        logging.info('[TCPClient] client disconnected')
 
     def recvData(self):
         """Receives data from server.
@@ -255,7 +255,7 @@ class TCPClient(object):
             return self.sock.recv(self.buffer_size)
 
         except socket.error as message:
-            logging.error(f"[TCPClient] error while receiving. Message: {message}")
+            logging.error(f'[TCPClient] error while receiving. Message: {message}')
             raise socket.error
 
     def send_data(self, data):
@@ -270,5 +270,5 @@ class TCPClient(object):
 
         except socket.error as message:
 
-            logging.error(f"[TCPClient] error while sending. Message: {message}")
-            raise OSError(f"[TCPClient] error while sending. Message: {message}")
+            logging.error(f'[TCPClient] error while sending. Message: {message}')
+            raise OSError(f'[TCPClient] error while sending. Message: {message}')

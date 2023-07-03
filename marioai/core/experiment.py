@@ -1,13 +1,7 @@
-import logging
-import os
-import signal
-import subprocess
 import time
 
-__all__ = ["Experiment"]
 
-
-class Experiment(object):
+class Experiment:
     """Episodic Experiment"""
 
     def __init__(self, task, agent, response_delay=0):

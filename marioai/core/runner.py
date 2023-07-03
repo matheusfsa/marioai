@@ -4,8 +4,6 @@ from .agent import Agent
 from .experiment import Experiment
 from .task import Task
 
-__all__ = ["Runner"]
-
 
 class Runner:
     """This class runs a experiment."""

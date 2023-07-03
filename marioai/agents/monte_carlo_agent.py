@@ -1,12 +1,10 @@
-from copy import deepcopy
-
 import numpy as np
 from tqdm import tqdm
 
 from marioai.agents import BaseAgent
 from marioai.core import Runner, Task
 
-__all__ = ["MonteCarloAgent"]
+__all__ = ['MonteCarloAgent']
 
 
 class State:
@@ -17,9 +15,9 @@ class State:
             self.state_attrs.append(key)
 
     def __repr__(self):
-        repr_str = "State("
+        repr_str = 'State('
         for attr in self.state_attrs:
-            repr_str += f"{attr}={getattr(self, attr)}, "
+            repr_str += f'{attr}={getattr(self, attr)}, '
         return repr_str
 
     def __hash__(self):
@@ -59,7 +57,7 @@ class MonteCarloAgent(BaseAgent):
         self.reward_threshold = reward_threshold
         self.reward_increment = reward_increment
         self.epsilon = 1
-        self.policy_kind = "greedy"
+        self.policy_kind = 'greedy'
         self.value_func = {}
         self._N = {}
         self._S = {}
@@ -76,21 +74,21 @@ class MonteCarloAgent(BaseAgent):
         self.actions_idx = []
 
     def compute_reward(self, reward_data):
-        if reward_data["status"] == 1:
-            return reward_data["distance"] * 2
-        if "distance" in reward_data:
-            return reward_data["distance"] * 0.1
+        if reward_data['status'] == 1:
+            return reward_data['distance'] * 2
+        if 'distance' in reward_data:
+            return reward_data['distance'] * 0.1
         dist = self.mario_floats[0] - self.actual_x
         self.actual_x = self.mario_floats[0]
         return dist * 0.01
 
     def policy(self, state):
         """This function compute the policy"""
-        if self.policy_kind == "random":
+        if self.policy_kind == 'random':
             action_idx = np.random.randint(self._Q[state].shape[0])
-        elif self.policy_kind == "greedy":
+        elif self.policy_kind == 'greedy':
             action_idx = self._Q[state].argmax()
-        elif self.policy_kind == "e_greedy":
+        elif self.policy_kind == 'e_greedy':
             if np.random.random() > self.epsilon:
                 action_idx = self._Q[state].argmax()
             else:
@@ -116,7 +114,7 @@ class MonteCarloAgent(BaseAgent):
     def fit(self, task: Task, **runner_kwargs):
         self.in_fit = True
         self._action_pool = task._action_pool
-        self.policy_kind = "e_greedy"
+        self.policy_kind = 'e_greedy'
         runner = Runner(self, task, **runner_kwargs)
         self.epsilon = 1.0
         for k in (pbar := tqdm(range(self.n_samples), total=self.n_samples)):
@@ -134,19 +132,18 @@ class MonteCarloAgent(BaseAgent):
                 self.epsilon = self.epsilon - epsilon_delta
                 self.reward_threshold = self.reward_threshold + self.reward_increment
             pbar.set_description(
-                f"Last Reward {self.fit_rewards[-1]:.2f} Epsilon: {self.epsilon:.3f} Reward Th: {self.reward_threshold: .3f}"
+                f'Last Reward {self.fit_rewards[-1]:.2f} Epsilon: {self.epsilon:.3f} Reward Th: {self.reward_threshold: .3f}'
             )
             pbar.refresh()
 
         runner.close()
         self.in_fit = False
-        self.policy_kind = "greedy"
+        self.policy_kind = 'greedy'
         return self
 
     def _step(self):
         # Compute all rewards
         rewards = np.array(list(map(self.compute_reward, self.rewards)))
-        prev_Q = deepcopy(self._Q)
         for i, (state_dict, action) in enumerate(zip(self.states, self.actions_idx)):
             state = State(**state_dict)
             # Increment counter

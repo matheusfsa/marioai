@@ -1,11 +1,9 @@
 import random
-from typing import List
-
-import numpy as np
-
 import marioai.core as core
 
-__all__ = ["BaseAgent"]
+__all__ = [
+    'BaseAgent'
+]
 
 
 class BaseAgent(core.Agent):
