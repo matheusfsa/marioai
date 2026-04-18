@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "marioai"
+version = "0.2.0"
+description = "Python client for the Togelius Mario AI Competition server."
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.22,<2",
+    "click>=8.1",
+    "tqdm>=4.64",
+    "gym>=0.26",
+    "shimmy>=0.2",
+    "stable-baselines3>=2.0",
+    "PyYAML>=6,<7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7",
+    "ruff>=0.3",
+]
+notebooks = [
+    "jupyter~=1.0",
+    "jupyterlab~=3.0",
+    "pandas>=1.4",
+    "matplotlib>=3.5",
+]
+
+[project.scripts]
+marioai = "marioai.cli:cli"
+
+[tool.setuptools.packages.find]
+include = ["marioai*"]
+
+[tool.setuptools.package-data]
+"marioai.core.server" = [
+    "**/*.class",
+    "**/*.png",
+    "**/*.gif",
+    "**/*.lvl",
+    "**/*.dat",
+]
+
+[tool.ruff]
+line-length = 160
+target-version = "py310"
+extend-exclude = ["notebooks", "marioai/core/server"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "single"

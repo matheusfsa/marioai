@@ -1,8 +1,18 @@
-dev_dependencies:
+.PHONY: install install-dev lint format test
+
+install:
 	pip install --upgrade pip
-	pip install -r requirements-dev.txt
-dependencies:
+	pip install -e .
+
+install-dev:
 	pip install --upgrade pip
-	pip install -r requirements.txt
+	pip install -e ".[dev]"
+
 lint:
-	flake8
+	ruff check .
+
+format:
+	ruff format .
+
+test:
+	pytest tests/
