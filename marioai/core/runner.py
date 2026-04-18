@@ -1,12 +1,14 @@
-from typing import List
+from __future__ import annotations
 
 from .agent import Agent
 from .experiment import Experiment
 from .task import Task
 
+__all__ = ['Runner']
+
 
 class Runner:
-    """This class runs a experiment."""
+    """High-level orchestrator: configures the environment then runs episodes."""
 
     def __init__(
         self,
@@ -22,28 +24,12 @@ class Runner:
         visualization: bool = True,
         fitness_values: int = 5,
         response_delay: int = 2,
-    ):
-        """This class running a mario game
-
-        Args:
-            agent (core.Agent): Agent used in game.
-            max_fps (int, optional): Game FPS. Defaults to 24.
-            level_difficult (int, optional): Level difficult. Defaults to 0.
-            level_type (int, optional): Level type. Defaults to 0.
-            creatures_enabled (bool, optional): If creatures is enabled. Defaults to True.
-            mario_mode (int, optional): Mario mode. Defaults to 2.
-            level_seed (int, optional): Random seed to generate levels scenes. Defaults to 1.
-            time_limit (int, optional): Time limit. Defaults to 100.
-            visualization (bool, optional): If the game will be streamed. Defaults to True.
-            fitness_values (int, optional): Fitness value. Defaults to 5.
-            response_delay (int, optional): Response delay. Defaults to 2.
-        """
+    ) -> None:
         self.task = task
         self.exp = Experiment(self.task, agent)
-        # Set experiment values
         self.exp.max_fps = max_fps
         self.exp.response_delay = response_delay
-        # Set environments values
+
         self.task.env.level_difficulty = level_difficulty
         self.task.env.level_type = level_type
         self.task.env.creatures_enabled = creatures_enabled
@@ -52,18 +38,14 @@ class Runner:
         self.task.env.time_limit = time_limit
         self.task.env.visualization = visualization
         self.task.env.fitness_values = fitness_values
+        self._closed = False
 
-    def run(self) -> List:
-        """This function execute a game
-        Returns:
-            List: Rewards
-        """
-        rewards = self.exp.do_episodes()
-        return rewards
+    def run(self) -> list[list[dict[str, float]]]:
+        """Run a single call to :meth:`Experiment.do_episodes`."""
+        return self.exp.do_episodes()
 
-    def close(self):
-        """This functions close the game"""
-        self.task.disconnect()
-
-    def __del__(self):
-        self.close()
+    def close(self) -> None:
+        """Disconnect from the server if still connected."""
+        if not self._closed:
+            self.task.disconnect()
+            self._closed = True

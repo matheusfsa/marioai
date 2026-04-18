@@ -1,12 +1,17 @@
+from __future__ import annotations
+
+from typing import Any
+
 import gym
 import numpy as np
 from gym import spaces
 
 from ..core import Environment
+from ..core.utils import FitnessResult, Observation
 
 __all__ = ['MarioEnv']
 
-ACTIONS = [
+ACTIONS: list[list[int]] = [
     # [backward, forward, crouch, jump, speed/bombs]
     [0, 0, 0, 0, 0],  # do nothing
     [0, 0, 0, 1, 0],  # jump
@@ -25,11 +30,17 @@ ACTIONS = [
 ]
 
 LEVEL_SHAPE = (22, 22)
-
 PLAYER_POSITION = 11
 
 
 class MarioEnv(gym.Env):
+    """Gym wrapper around :class:`marioai.core.Environment`.
+
+    The observation space is the 22x22 ``level_scene`` grid, with a few
+    values remapped so they fit in ``Box(low=0, high=26)``. The action
+    space is :data:`Discrete(14)` over :data:`ACTIONS`.
+    """
+
     def __init__(
         self,
         level_difficulty: int = 0,
@@ -41,14 +52,14 @@ class MarioEnv(gym.Env):
         max_fps: int = 24,
         visualization: bool = True,
         fitness_values: int = 5,
-    ):
+    ) -> None:
         self._env = Environment()
         self.max_fps = max_fps
         self.observation_space = spaces.Box(low=0, high=26, shape=LEVEL_SHAPE)
         self.action_space = spaces.Discrete(len(ACTIONS))
         self.mario_pos = 0
         self.finished = False
-        self.last_sense = None
+        self.last_sense: Observation | FitnessResult | None = None
 
         self._env.level_difficulty = level_difficulty
         self._env.level_type = level_type
@@ -59,73 +70,58 @@ class MarioEnv(gym.Env):
         self._env.visualization = visualization
         self._env.fitness_values = fitness_values
 
-    def _get_info(self, sense):
-        if len(sense) == 6:
-            return {'distance': sense[2][0]}
+    def _get_info(self, sense: Observation | FitnessResult) -> dict[str, Any]:
+        if isinstance(sense, Observation):
+            distance = sense.mario_floats[0] if sense.mario_floats else 0.0
         else:
-            return {'distance': sense[1]}
+            distance = sense.distance
+        return {'distance': distance}
 
-    def build_state(self, sense):
-        """Build state from level scene"""
-        state_vars = [
-            'can_jump',
-            'on_ground',
-            'mario_floats',
-            'enemies_floats',
-            'level_scene',
-        ]
-        state = {}
-        if len(sense) == 6:
-            for var, value in zip(state_vars, sense[:5]):
-                if var == 'level_scene':
-                    value[value == 25] = 22
-                    value[value == -11] = 23
-                    value[value == -10] = 24
-                    value[value == 42] = 25
-                    value[PLAYER_POSITION, PLAYER_POSITION] = 26
-                state[var] = value
-        else:
-            for var in state_vars:
-                state[var] = 0
-            self.finished = True
-            state['level_scene'] = np.zeros(LEVEL_SHAPE)
+    def _build_observation(self, sense: Observation | FitnessResult) -> np.ndarray:
+        """Turn ``sense`` into the 22x22 array expected by the observation space."""
+        if isinstance(sense, Observation):
+            scene = sense.level_scene.copy()
+            scene[scene == 25] = 22
+            scene[scene == -11] = 23
+            scene[scene == -10] = 24
+            scene[scene == 42] = 25
+            scene[PLAYER_POSITION, PLAYER_POSITION] = 26
+            return scene
+        self.finished = True
+        return np.zeros(LEVEL_SHAPE)
 
-        return state
-
-    def reset(self):
+    def reset(self) -> np.ndarray:
         self._env.reset()
-        self._env.get_sensors()
-        self.finished = False
-        observation = {
-            'level_scene': np.zeros(LEVEL_SHAPE),
-            'can_jump': 0,
-            'on_ground': 0,
-        }
-        return observation['level_scene']
+        sense = self._env.get_sensors()
+        self.last_sense = sense
+        self.finished = isinstance(sense, FitnessResult)
+        return self._build_observation(sense)
 
-    def step(self, action):
+    def step(self, action: int) -> tuple[np.ndarray, float, bool, dict[str, Any]]:
         self._env.perform_action(ACTIONS[action])
         sense = self._env.get_sensors()
-        observation = self.build_state(sense)
+        self.last_sense = sense
+        observation = self._build_observation(sense)
         info = self._get_info(sense)
-        if self.finished:
+
+        if isinstance(sense, FitnessResult):
             reward_data = {
-                'status': sense[0],
-                'distance': sense[1],
-                'timeLeft': sense[2],
-                'marioMode': sense[3],
-                'coins': sense[4],
+                'status': sense.status,
+                'distance': sense.distance,
+                'timeLeft': sense.time_left,
+                'marioMode': sense.mario_mode,
+                'coins': sense.coins,
             }
             reward = self.compute_reward(reward_data)
         else:
-            reward = self.compute_reward(observation)
-        return observation['level_scene'], reward, self.finished, info
+            reward = self.compute_reward(info)
 
-    def compute_reward(self, reward_data):
-        """Function that compute reward"""
-        if 'distance' in reward_data:
-            return reward_data['distance']
-        return 0
+        return observation, reward, self.finished, info
 
-    def close(self):
+    def compute_reward(self, reward_data: dict[str, Any]) -> float:
+        if 'distance' in reward_data and reward_data['distance'] is not None:
+            return float(reward_data['distance'])
+        return 0.0
+
+    def close(self) -> None:
         self._env.disconnect()

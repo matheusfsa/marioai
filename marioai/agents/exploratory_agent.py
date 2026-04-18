@@ -1,72 +1,61 @@
 import random
 
-import numpy as np
+from marioai import core
+from marioai.core import sensing
 
-import marioai.core as core
-
-__all__ = [
-    'ExploratoryAgent'
-]
+__all__ = ['ExploratoryAgent']
 
 
 class ExploratoryAgent(core.Agent):
-    def __init__(self, window_size=4, max_dist=2, player_pos=11):
+    """Agent that builds a proximity-based state every 24 frames.
+
+    Currently the derived state is only recorded, not used to pick actions —
+    :meth:`act` still returns a random forward move. The state dict is kept
+    on ``self.state`` so subclasses can consume it.
+    """
+
+    def __init__(
+        self,
+        window_size: int = 4,
+        max_dist: int = 2,
+        player_pos: int = 11,
+    ) -> None:
         super().__init__()
         self.frames = 0
         self.window_size = window_size
         self.max_dist = max_dist
         self.player_pos = player_pos
-        self.state = None
-        self.frames = 0
-        self.objects = {
-            'soft': [
-                -11,
-            ],
-            'hard': [20, -10],
-            'enemy': [2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15],
-            'brick': [16, 21],
-            'projetil': [25],
-        }
+        self.state: dict[str, object] | None = None
+        self.objects = sensing.DEFAULT_OBJECTS
 
-    def _is_near(self, objects, dist):
-        for i in range(1, 4):
-            x = max(0, self.player_pos - i)
-            y = min(self.level_scene.shape[0], self.player_pos + dist)
-            if self.level_scene[x, y] in objects:
-                return True
-        return False
+    def _build_state(self) -> None:
+        if self.level_scene is None:
+            return
 
-    def _has_role(self, ground_pos, dist):
-        y = min(self.level_scene.shape[0], self.player_pos + dist)
-        return (self.level_scene[ground_pos:, y] == 0).all()
-
-    def _build_state(self):
-        start, end = 11 - self.window_size, 11 + self.window_size
-        if self.on_ground:
-            ground_pos = 12
-        else:
-            is_ground = (self.level_scene[start:, start:end] == -10) * 1
-            is_ground = np.nonzero(is_ground)
-            if is_ground[0].shape[0]:
-                ground_pos = is_ground[0][0] + start
-            else:
-                ground_pos = 10
-        state = {
-            'episode_starts': (self.level_scene != 0).any(),
+        scene = self.level_scene.copy()
+        ground_pos = sensing.get_ground(
+            scene,
+            bool(self.on_ground),
+            window_size=self.window_size,
+            player_pos=self.player_pos,
+        )
+        state: dict[str, object] = {
+            'episode_starts': bool((scene != 0).any()),
             'on_ground': self.on_ground,
             'can_jump': self.can_jump,
             'episode_over': self.episode_over,
         }
+
         if self.frames % 24 == 0:
             for o_name, o_values in self.objects.items():
                 for dist in range(1, self.max_dist + 1):
-                    state[f'{o_name}_{dist}'] = self._is_near(o_values, dist)
+                    state[f'{o_name}_{dist}'] = sensing.is_near(scene, o_values, dist, player_pos=self.player_pos)
             for dist in range(1, self.max_dist + 1):
-                state[f'has_role_near_{dist}'] = self._has_role(ground_pos, dist)
-            self.level_scene[11, 11] = 100
+                state[f'has_role_near_{dist}'] = sensing.has_role_near(scene, ground_pos, dist, player_pos=self.player_pos)
+
         self.frames += 1
         self.state = state
 
-    def act(self):
+    def act(self) -> list[int]:
         self._build_state()
         return [0, 1, 0, random.randint(0, 1), random.randint(0, 1)]
