@@ -38,7 +38,7 @@ _DEFAULT_SAVE_PATH = Path(__file__).with_name('dqn_pixels.zip')
 @click.option('--mario-mode', default=2, show_default=True, type=int)
 @click.option('--time-limit', default=100, show_default=True, type=int)
 @click.option('--max-fps', default=720, show_default=True, type=int)
-@click.option('--window-title', default='Mario', show_default=True)
+@click.option('--window-title', default='Mario Intelligent', show_default=True, help='Substring matched against the window title. Default is the exact title the Java server sets; override only if you rename it.')
 @click.option('--capture-backend', default='mss', show_default=True, type=click.Choice(['mss', 'win32']))
 @click.option('--save-path', default=str(_DEFAULT_SAVE_PATH), show_default=True, type=click.Path(dir_okay=False))
 @click.option('--log-interval', default=10, show_default=True, type=int)
@@ -66,8 +66,8 @@ def train(
 ) -> None:
     """Train a CNN-policy DQN on captured Mario frames."""
     # Heavy imports deferred so `--help` stays snappy and unit tests don't need them.
-    from gym.wrappers import FrameStack
     from stable_baselines3 import DQN
+    from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
 
     from marioai.capture import GameWindowCapture
     from marioai.gym import ShapedPixelMarioEnv
@@ -87,7 +87,10 @@ def train(
         resize=(84, 84),
         backend=capture_backend,  # type: ignore[arg-type]
     )
-    env = ShapedPixelMarioEnv(
+    # SB3's ``VecFrameStack`` runs after the gym→gymnasium compat shim (shimmy)
+    # so it's agnostic to ``MarioEnv`` using the classic gym API. ``gym.wrappers.FrameStack``
+    # would require the 0.26 (obs, info)/5-tuple API, which this env does not implement.
+    base_env = ShapedPixelMarioEnv(
         capture=capture,
         level_difficulty=level_difficulty,
         level_type=level_type,
@@ -96,7 +99,8 @@ def train(
         time_limit=time_limit,
         max_fps=max_fps,
     )
-    env = FrameStack(env, num_stack=4)
+    env = DummyVecEnv([lambda: base_env])
+    env = VecFrameStack(env, n_stack=4)
 
     model = DQN(
         'CnnPolicy',

@@ -35,6 +35,8 @@ capture = [
     "pygetwindow>=0.0.9",
     "opencv-python>=4.8",
     "pywin32>=306; platform_system == 'Windows'",
+    "ewmh>=0.1.6; platform_system == 'Linux'",
+    "python-xlib>=0.33; platform_system == 'Linux'",
 ]
 
 [project.scripts]

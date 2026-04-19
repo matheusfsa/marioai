@@ -240,3 +240,75 @@ class TestWin32Backend:
         cap = GameWindowCapture('Mario', backend='win32')
         with pytest.raises(CaptureBackendError, match='only available on Windows'):
             cap.start()
+
+
+# ---------------------------------------------------------------------------
+# Linux/X11 shim
+# ---------------------------------------------------------------------------
+class TestX11Shim:
+    def test_load_pygetwindow_falls_back_on_linux(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """``pygetwindow`` raises ``NotImplementedError`` on Linux — the loader must fall through to the X11 shim."""
+        monkeypatch.setattr(sys, 'platform', 'linux')
+
+        import builtins
+
+        real_import = builtins.__import__
+
+        def fake_import(name: str, *args, **kwargs):
+            if name == 'pygetwindow':
+                raise NotImplementedError('PyGetWindow currently does not support Linux.')
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, '__import__', fake_import)
+        result = capture_module._load_pygetwindow()
+        assert hasattr(result, 'getAllWindows'), f'fallback must expose getAllWindows, got {result!r}'
+
+    def test_x11_shim_enumerates_and_queries_geometry(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """End-to-end shim test with fake ewmh clients — no real X11 dependency."""
+        shim = capture_module._X11PyGetWindowShim()
+
+        fake_geom = SimpleNamespace(x=5, y=7, width=320, height=240)
+        fake_parent_tree = SimpleNamespace(parent=0)  # direct child of root
+        fake_xwin = MagicMock()
+        fake_xwin.id = 0xDEADBEEF
+        fake_xwin.get_geometry.return_value = fake_geom
+        fake_xwin.query_tree.return_value = fake_parent_tree
+
+        fake_root = MagicMock()
+        fake_ewmh = MagicMock()
+        fake_ewmh.display.screen.return_value.root = fake_root
+        fake_ewmh.getClientList.return_value = [fake_xwin]
+        fake_ewmh.getWmName.return_value = b'Mario Window'
+
+        fake_ewmh_mod = MagicMock()
+        fake_ewmh_mod.EWMH.return_value = fake_ewmh
+        monkeypatch.setitem(sys.modules, 'ewmh', fake_ewmh_mod)
+
+        windows = shim.getAllWindows()
+        assert len(windows) == 1
+        w = windows[0]
+        assert w.title == 'Mario Window'
+        assert (w.left, w.top, w.width, w.height) == (5, 7, 320, 240)
+        assert w._hWnd == 0xDEADBEEF
+
+    def test_x11_shim_skips_nameless_and_broken_windows(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        shim = capture_module._X11PyGetWindowShim()
+        nameless = MagicMock()
+        broken = MagicMock()
+        broken.get_geometry.side_effect = RuntimeError('zombie')
+        good = MagicMock()
+        good.id = 1
+        good.get_geometry.return_value = SimpleNamespace(x=0, y=0, width=10, height=10)
+        good.query_tree.return_value = SimpleNamespace(parent=0)
+
+        fake_ewmh = MagicMock()
+        fake_ewmh.display.screen.return_value.root = MagicMock()
+        fake_ewmh.getClientList.return_value = [nameless, broken, good]
+        fake_ewmh.getWmName.side_effect = [None, b'zombie', b'ok']
+
+        fake_ewmh_mod = MagicMock()
+        fake_ewmh_mod.EWMH.return_value = fake_ewmh
+        monkeypatch.setitem(sys.modules, 'ewmh', fake_ewmh_mod)
+
+        windows = shim.getAllWindows()
+        assert [w.title for w in windows] == ['ok']

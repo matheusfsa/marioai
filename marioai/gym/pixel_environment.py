@@ -56,7 +56,11 @@ class ShapedPixelMarioEnv(ShapedMarioEnv):
             )
         self._capture = capture
         width, height = capture.resize
-        self.observation_space = spaces.Box(low=0, high=255, shape=(height, width), dtype=np.uint8)
+        # ``(H, W, 1)`` keeps SB3's ``CnnPolicy`` / ``VecFrameStack`` happy: the image
+        # space check (``sb3.common.preprocessing.is_image_space``) rejects a plain 2D
+        # box, and ``VecFrameStack`` stacks along the last axis — stacking a 2D grayscale
+        # observation would concatenate width-wise and destroy the spatial layout.
+        self.observation_space = spaces.Box(low=0, high=255, shape=(height, width, 1), dtype=np.uint8)
         self._last_obs: np.ndarray | None = None
         self._missed_frames = 0
         self._capture.start()
@@ -90,6 +94,8 @@ class ShapedPixelMarioEnv(ShapedMarioEnv):
                 return np.zeros(self.observation_space.shape, dtype=np.uint8)
             return self._last_obs
 
+        if frame.ndim == 2:
+            frame = frame[:, :, None]  # (H, W) → (H, W, 1) to match observation_space
         self._missed_frames = 0
         self._last_obs = frame
         return frame

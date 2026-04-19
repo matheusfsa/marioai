@@ -78,7 +78,25 @@ def _load_pygetwindow():
         import pygetwindow  # type: ignore[import-not-found]
     except ImportError as exc:
         raise CaptureBackendError(f'pygetwindow is not installed; {_INSTALL_HINT}') from exc
+    except NotImplementedError:
+        # ``pygetwindow`` raises ``NotImplementedError`` at import time on Linux
+        # (it only ships Windows/macOS backends). Fall back to an X11 shim that
+        # mimics the ``getAllWindows()`` surface the rest of this module uses.
+        if sys.platform.startswith('linux'):
+            return _load_x11_shim()
+        raise
     return pygetwindow
+
+
+def _load_x11_shim():
+    try:
+        import ewmh  # type: ignore[import-not-found]  # noqa: F401
+        import Xlib  # type: ignore[import-not-found]  # noqa: F401
+    except ImportError as exc:
+        raise CaptureBackendError(
+            f"window discovery on Linux requires 'ewmh' and 'python-xlib'; {_INSTALL_HINT}",
+        ) from exc
+    return _X11PyGetWindowShim()
 
 
 def _load_cv2():
@@ -99,6 +117,94 @@ def _load_win32():
     except ImportError as exc:
         raise CaptureBackendError(f'pywin32 is not installed; {_INSTALL_HINT}') from exc
     return win32gui, win32ui, win32con
+
+
+# ---------------------------------------------------------------------------
+# Linux/X11 shim — emulates the sliver of ``pygetwindow`` we rely on
+# ---------------------------------------------------------------------------
+class _X11Window:
+    """Live-querying X11 window adapter compatible with the pygetwindow API.
+
+    Exposes ``title``, ``left``, ``top``, ``width``, ``height`` and ``_hWnd``
+    (the last is only meaningful for the Windows ``PrintWindow`` backend, so
+    it is the raw X window id on Linux — the ``win32`` capture backend still
+    refuses to run off-Windows).
+
+    Geometry properties re-query the X server on each access so that
+    :meth:`GameWindowCapture.update_window_position` picks up window moves
+    without needing to re-enumerate the whole client list.
+    """
+
+    def __init__(self, xlib_window, root_window, title: str) -> None:
+        self._w = xlib_window
+        self._root = root_window
+        self._title = title
+        self._hWnd = int(xlib_window.id)
+
+    @property
+    def title(self) -> str:
+        return self._title
+
+    def _abs_geometry(self) -> tuple[int, int, int, int]:
+        w = self._w
+        geom = w.get_geometry()
+        x, y = geom.x, geom.y
+        parent = w
+        # Walk up the tree to accumulate offsets — ``translate_coords`` gives
+        # inconsistent results on reparented (WM-decorated) windows, and the
+        # root-relative position is what ``mss`` needs for its bbox.
+        while True:
+            q = parent.query_tree()
+            if q.parent == 0 or q.parent == self._root:
+                break
+            parent = q.parent
+            pg = parent.get_geometry()
+            x += pg.x
+            y += pg.y
+        return int(x), int(y), int(geom.width), int(geom.height)
+
+    @property
+    def left(self) -> int:
+        return self._abs_geometry()[0]
+
+    @property
+    def top(self) -> int:
+        return self._abs_geometry()[1]
+
+    @property
+    def width(self) -> int:
+        return self._abs_geometry()[2]
+
+    @property
+    def height(self) -> int:
+        return self._abs_geometry()[3]
+
+
+class _X11PyGetWindowShim:
+    """``pygetwindow``-shaped facade over ``ewmh`` for window enumeration."""
+
+    def getAllWindows(self) -> list[_X11Window]:  # noqa: N802 — mirrors pygetwindow API
+        from ewmh import EWMH  # type: ignore[import-not-found]
+
+        ewmh = EWMH()
+        root = ewmh.display.screen().root
+        results: list[_X11Window] = []
+        for w in ewmh.getClientList():
+            try:
+                name = ewmh.getWmName(w)
+            except Exception:  # noqa: BLE001 — skip windows that refuse introspection
+                continue
+            if isinstance(name, bytes):
+                name = name.decode('utf-8', errors='replace')
+            if not name:
+                continue
+            try:
+                # Touch geometry once to filter out dead/unmapped handles early.
+                w.get_geometry()
+            except Exception:  # noqa: BLE001 — skip zombies
+                continue
+            results.append(_X11Window(w, root, name))
+        return results
 
 
 # ---------------------------------------------------------------------------

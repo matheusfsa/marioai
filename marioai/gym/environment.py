@@ -90,6 +90,15 @@ class MarioEnv(gym.Env):
         self.finished = True
         return np.zeros(LEVEL_SHAPE)
 
+    def seed(self, seed: int | None = None) -> list[int | None]:
+        """Shim for ``shimmy.openai_gym_compatibility`` — SB3 calls this on reset.
+
+        Level randomness is controlled server-side by ``level_seed``, so this
+        is a pass-through that just returns the seed in the list form classic
+        gym expected.
+        """
+        return [seed]
+
     def reset(self) -> np.ndarray:
         self._env.reset()
         sense = self._env.get_sensors()

@@ -1,5 +1,29 @@
+from unittest.mock import MagicMock
+
 import numpy as np
 import pytest
+
+from marioai.core import environment as _environment
+
+
+@pytest.fixture(autouse=True)
+def _no_java_server(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Prevent ``Environment.__init__`` from spawning the Java server.
+
+    Several tests construct ``MarioEnv``/``ShapedPixelMarioEnv`` to exercise
+    Python-side logic and then swap ``env._env`` for a ``MagicMock``. Without
+    this patch the real server subprocess is spawned and then orphaned when
+    the reference is replaced, leaving ``java ch.idsia.scenarios.MainRun``
+    processes alive after the test run.
+    """
+
+    def _fake_run_server(self: _environment.Environment) -> MagicMock:
+        self._server_process = None
+        self._stdout_log = None
+        self._stderr_log = None
+        return MagicMock(name='TCPClient')
+
+    monkeypatch.setattr(_environment.Environment, '_run_server', _fake_run_server)
 
 
 @pytest.fixture

@@ -71,7 +71,7 @@ class TestConfigValidation:
     def test_observation_space(self) -> None:
         capture = FakeCapture([_frame()], resize=(84, 84))
         env = _make_env(capture)
-        assert env.observation_space.shape == (84, 84)
+        assert env.observation_space.shape == (84, 84, 1)
         assert env.observation_space.dtype == np.uint8
 
 
@@ -85,7 +85,7 @@ class TestObservation:
         env.reset()
         obs, _, done, _ = env.step(0)
         assert not done
-        assert np.array_equal(obs, target)
+        assert np.array_equal(obs.squeeze(-1), target)
 
     def test_finished_on_fitness_result(self) -> None:
         capture = FakeCapture([_frame()])  # only one frame; ok because terminal step doesn't call capture
@@ -96,7 +96,7 @@ class TestObservation:
         assert done is True
         # status=1 → +100; distance went 0→100 → +100; coins 0→3 → +30; total = 230
         assert reward == pytest.approx(230.0)
-        assert obs.shape == (84, 84)
+        assert obs.shape == (84, 84, 1)
 
     def test_missed_frame_reuses_last(self) -> None:
         first = _frame(value=10)
@@ -106,8 +106,8 @@ class TestObservation:
         env.reset()  # consumes 'first' as initial observation
         obs1, _, _, _ = env.step(0)  # capture returns None → reuse first
         obs2, _, _, _ = env.step(0)  # capture returns None again
-        assert np.array_equal(obs1, first)
-        assert np.array_equal(obs2, first)
+        assert np.array_equal(obs1.squeeze(-1), first)
+        assert np.array_equal(obs2.squeeze(-1), first)
 
     def test_logs_warning_after_5_misses(self, caplog) -> None:
         first = _frame(value=10)
