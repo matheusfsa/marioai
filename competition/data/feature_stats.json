@@ -1,0 +1,199 @@
+{
+  "1-easy": {
+    "feature_hits": {
+      "can_jump": 583,
+      "enemy_1": 13,
+      "enemy_2": 10,
+      "hard_1": 687,
+      "hard_2": 698,
+      "has_role_near_1": 7,
+      "has_role_near_2": 10,
+      "on_ground": 870,
+      "projetil_1": 31,
+      "projetil_2": 69,
+      "soft_1": 97,
+      "soft_2": 106
+    },
+    "feature_total": {
+      "brick_1": 1500,
+      "brick_2": 1500,
+      "can_jump": 1500,
+      "enemy_1": 1500,
+      "enemy_2": 1500,
+      "hard_1": 1500,
+      "hard_2": 1500,
+      "has_role_near_1": 1500,
+      "has_role_near_2": 1500,
+      "on_ground": 1500,
+      "projetil_1": 1500,
+      "projetil_2": 1500,
+      "soft_1": 1500,
+      "soft_2": 1500
+    },
+    "frames": 1505,
+    "level_type": 0,
+    "tile_counts": {
+      "-10": 93255,
+      "-11": 11014,
+      "0": 620653,
+      "2": 219,
+      "25": 859
+    },
+    "unique_states": 41
+  },
+  "2-medium-A": {
+    "feature_hits": {
+      "can_jump": 170,
+      "enemy_1": 31,
+      "enemy_2": 34,
+      "hard_1": 205,
+      "hard_2": 345,
+      "has_role_near_1": 13,
+      "has_role_near_2": 15,
+      "on_ground": 253,
+      "projetil_1": 15,
+      "projetil_2": 3
+    },
+    "feature_total": {
+      "brick_1": 450,
+      "brick_2": 450,
+      "can_jump": 450,
+      "enemy_1": 450,
+      "enemy_2": 450,
+      "hard_1": 450,
+      "hard_2": 450,
+      "has_role_near_1": 450,
+      "has_role_near_2": 450,
+      "on_ground": 450,
+      "projetil_1": 450,
+      "projetil_2": 450,
+      "soft_1": 450,
+      "soft_2": 450
+    },
+    "frames": 455,
+    "level_type": 0,
+    "tile_counts": {
+      "-10": 16446,
+      "0": 197710,
+      "20": 2749,
+      "25": 121,
+      "8": 774
+    },
+    "unique_states": 28
+  },
+  "3-medium-B": {
+    "feature_hits": {
+      "can_jump": 842,
+      "enemy_1": 19,
+      "enemy_2": 8,
+      "hard_1": 1067,
+      "hard_2": 1097,
+      "has_role_near_1": 6,
+      "has_role_near_2": 10,
+      "on_ground": 1244,
+      "projetil_1": 56,
+      "projetil_2": 102
+    },
+    "feature_total": {
+      "brick_1": 2152,
+      "brick_2": 2152,
+      "can_jump": 2152,
+      "enemy_1": 2152,
+      "enemy_2": 2152,
+      "hard_1": 2152,
+      "hard_2": 2152,
+      "has_role_near_1": 2152,
+      "has_role_near_2": 2152,
+      "on_ground": 2152,
+      "projetil_1": 2152,
+      "projetil_2": 2152,
+      "soft_1": 2152,
+      "soft_2": 2152
+    },
+    "frames": 2157,
+    "level_type": 1,
+    "tile_counts": {
+      "-10": 245237,
+      "0": 772894,
+      "12": 2636,
+      "20": 18824,
+      "25": 791,
+      "8": 1186
+    },
+    "unique_states": 37
+  },
+  "4-hard-A": {
+    "feature_hits": {
+      "can_jump": 1170,
+      "enemy_1": 4,
+      "enemy_2": 6,
+      "hard_1": 1706,
+      "hard_2": 1710,
+      "has_role_near_1": 10,
+      "has_role_near_2": 10,
+      "on_ground": 1769
+    },
+    "feature_total": {
+      "brick_1": 3000,
+      "brick_2": 3000,
+      "can_jump": 3000,
+      "enemy_1": 3000,
+      "enemy_2": 3000,
+      "hard_1": 3000,
+      "hard_2": 3000,
+      "has_role_near_1": 3000,
+      "has_role_near_2": 3000,
+      "on_ground": 3000,
+      "projetil_1": 3000,
+      "projetil_2": 3000,
+      "soft_1": 3000,
+      "soft_2": 3000
+    },
+    "frames": 3005,
+    "level_type": 2,
+    "tile_counts": {
+      "-10": 216653,
+      "0": 1204709,
+      "12": 5866,
+      "20": 24772
+    },
+    "unique_states": 11
+  },
+  "5-hard-B": {
+    "feature_hits": {
+      "can_jump": 1171,
+      "enemy_1": 247,
+      "enemy_2": 231,
+      "hard_1": 2858,
+      "hard_2": 10,
+      "has_role_near_1": 15,
+      "has_role_near_2": 15,
+      "on_ground": 1769
+    },
+    "feature_total": {
+      "brick_1": 3000,
+      "brick_2": 3000,
+      "can_jump": 3000,
+      "enemy_1": 3000,
+      "enemy_2": 3000,
+      "hard_1": 3000,
+      "hard_2": 3000,
+      "has_role_near_1": 3000,
+      "has_role_near_2": 3000,
+      "on_ground": 3000,
+      "projetil_1": 3000,
+      "projetil_2": 3000,
+      "soft_1": 3000,
+      "soft_2": 3000
+    },
+    "frames": 3005,
+    "level_type": 3,
+    "tile_counts": {
+      "-10": 73837,
+      "0": 1339966,
+      "20": 34710,
+      "8": 3487
+    },
+    "unique_states": 23
+  }
+}
