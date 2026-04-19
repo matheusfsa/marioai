@@ -7,7 +7,7 @@ Controle de progresso da competição. As etapas são **sequenciais** (cada uma 
 | Etapa | Título | Status |
 |---|---|---|
 | 0 | Investigação empírica do servidor | ✅ concluída |
-| 1 | Infraestrutura compartilhada da competição | ⬜ pendente |
+| 1 | Infraestrutura compartilhada da competição | ✅ concluída |
 | 2 | Agentes sem treino (rule-based, A*) | ⬜ pendente |
 | 3 | Agentes tabulares (ε-greedy, MC, SARSA, Q-learning) | ⬜ pendente |
 | 4 | Agentes deep (DQN, PPO) | ⬜ pendente |
@@ -90,11 +90,11 @@ Controle de progresso da competição. As etapas são **sequenciais** (cada uma 
 
 ### Critério de "pronto"
 
-- [ ] `python -m marioai.competition --help` (ou CLI equivalente via `click`) existe.
-- [ ] `CompetitionRunner(RandomAgent()).evaluate()` executa as 5 fases sem erro.
-- [ ] `Scoreboard` produz ordenação estável dado um conjunto de `PhaseResult`s.
-- [ ] Testes unitários cobrem os casos de empate por `time_left` e `distance`.
-- [ ] `make lint` e `make test` passam.
+- [x] `python -m marioai.competition --help` (ou CLI equivalente via `click`) existe.
+- [x] `CompetitionRunner(RandomAgent()).evaluate()` executa as 5 fases sem erro.
+- [x] `Scoreboard` produz ordenação estável dado um conjunto de `PhaseResult`s.
+- [x] Testes unitários cobrem os casos de empate por `time_left` e `distance`.
+- [x] `make lint` e `make test` passam.
 
 ---
 
