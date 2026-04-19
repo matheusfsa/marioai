@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from .agent import Agent
 from .experiment import Experiment
 from .task import Task
+
+if TYPE_CHECKING:
+    from ..capture import GameWindowCapture
 
 __all__ = ['Runner']
 
@@ -24,9 +29,10 @@ class Runner:
         visualization: bool = True,
         fitness_values: int = 5,
         response_delay: int = 2,
+        capture: GameWindowCapture | None = None,
     ) -> None:
         self.task = task
-        self.exp = Experiment(self.task, agent)
+        self.exp = Experiment(self.task, agent, capture=capture)
         self.exp.max_fps = max_fps
         self.exp.response_delay = response_delay
 

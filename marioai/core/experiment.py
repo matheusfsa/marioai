@@ -1,23 +1,35 @@
 from __future__ import annotations
 
+import logging
 import time
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from ..capture import GameWindowCapture
     from .agent import Agent
     from .task import Task
 
 __all__ = ['Experiment']
 
+logger = logging.getLogger(__name__)
+
 
 class Experiment:
-    """Runs episodic interaction between a :class:`Task` and an :class:`Agent`."""
+    """Runs episodic interaction between a :class:`Task` and an :class:`Agent`.
+
+    When a :class:`marioai.capture.GameWindowCapture` is provided, each step
+    captures a frame from the game window and hands it to the agent via
+    :meth:`Agent.observe_frame` before calling :meth:`Agent.sense`. Capture
+    is opt-in: omit ``capture`` (or pass ``None``) to keep the previous
+    headless behaviour.
+    """
 
     def __init__(
         self,
         task: Task,
         agent: Agent,
         response_delay: int = 0,
+        capture: GameWindowCapture | None = None,
     ) -> None:
         self.response_delay = response_delay
         self._frame = 0
@@ -25,9 +37,17 @@ class Experiment:
         self.agent = agent
         self.max_fps: int = -1
         self.action: int = 0
+        self._capture = capture
 
     def _step(self) -> dict[str, float]:
         state = self.task.get_sensors()
+        if self._capture is not None:
+            try:
+                frame = self._capture.capture_frame()
+            except Exception:  # noqa: BLE001 — never let capture kill the loop
+                logger.exception('[experiment] capture_frame raised; passing None to agent')
+                frame = None
+            self.agent.observe_frame(frame)
         if self.task.finished or (self._frame % (self.response_delay + 1)) == 0:
             self.agent.sense(state)
             self.task.perform_action(self.agent.act())
@@ -41,10 +61,16 @@ class Experiment:
         rewards: list[dict[str, float]] = []
         self.agent.reset()
         self.task.reset()
-        while not self.task.finished:
-            rewards.append(self._step())
-            if self.max_fps > 0:
-                time.sleep(1.0 / self.max_fps)
+        if self._capture is not None:
+            self._capture.start()
+        try:
+            while not self.task.finished:
+                rewards.append(self._step())
+                if self.max_fps > 0:
+                    time.sleep(1.0 / self.max_fps)
+        finally:
+            if self._capture is not None:
+                self._capture.stop()
         return rewards
 
     def do_episodes(self, n: int = 1) -> list[list[dict[str, float]]]:

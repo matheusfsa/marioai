@@ -30,6 +30,12 @@ notebooks = [
     "pandas>=1.4",
     "matplotlib>=3.5",
 ]
+capture = [
+    "mss>=9.0",
+    "pygetwindow>=0.0.9",
+    "opencv-python>=4.8",
+    "pywin32>=306; platform_system == 'Windows'",
+]
 
 [project.scripts]
 marioai = "marioai.cli:cli"

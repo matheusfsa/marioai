@@ -1,6 +1,6 @@
 # Competição de Agentes MarioAI
 
-Competição entre **8 agentes** que implementam técnicas distintas de tomada de decisão — do rule-based clássico a RL profundo — avaliados num mesmo conjunto de 5 fases reprodutíveis.
+Competição entre **9 agentes** que implementam técnicas distintas de tomada de decisão — do rule-based clássico a RL profundo com visão — avaliados num mesmo conjunto de 5 fases reprodutíveis.
 
 O foco desta pasta é **documentação e modelagem**. Cada agente tem dois markdowns:
 
@@ -19,8 +19,9 @@ A implementação dos agentes e do runner da competição será feita em PRs fut
 | 4 | Monte Carlo control | RL tabular | [`agents/monte_carlo/`](agents/monte_carlo/) |
 | 5 | SARSA | RL tabular on-policy | [`agents/sarsa/`](agents/sarsa/) |
 | 6 | Q-learning | RL tabular off-policy | [`agents/q_learning/`](agents/q_learning/) |
-| 7 | DQN | RL profundo (valor) | [`agents/dqn/`](agents/dqn/) |
+| 7 | DQN | RL profundo (valor, simbólico) | [`agents/dqn/`](agents/dqn/) |
 | 8 | PPO | RL profundo (policy) | [`agents/ppo/`](agents/ppo/) |
+| 9 | DQN pixels + CNN | RL profundo (valor, visão) | [`agents/dqn_pixels/`](agents/dqn_pixels/) |
 
 ## Regras da competição
 

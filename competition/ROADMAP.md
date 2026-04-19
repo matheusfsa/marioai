@@ -6,7 +6,7 @@ Controle de progresso da competição. As etapas são **sequenciais** (cada uma 
 
 | Etapa | Título | Status |
 |---|---|---|
-| 0 | Investigação empírica do servidor | ⬜ pendente |
+| 0 | Investigação empírica do servidor | ✅ concluída |
 | 1 | Infraestrutura compartilhada da competição | ⬜ pendente |
 | 2 | Agentes sem treino (rule-based, A*) | ⬜ pendente |
 | 3 | Agentes tabulares (ε-greedy, MC, SARSA, Q-learning) | ⬜ pendente |
@@ -63,10 +63,10 @@ Controle de progresso da competição. As etapas são **sequenciais** (cada uma 
 
 ### Critério de "pronto"
 
-- [ ] `competition/investigate.py` roda sem crashes nas 5 fases.
-- [ ] `competition/data/investigation.csv` gerado com ≥ 100 linhas (20 runs × 5 fases).
-- [ ] `competition/00-investigation.md` responde às 5 perguntas com dados (não apenas opinião).
-- [ ] Decisões de modelagem controversas (ex.: number de features, shaping exato, budget) têm base empírica documentada no markdown.
+- [x] `competition/investigate.py` roda sem crashes nas 5 fases.
+- [x] `competition/data/investigation.csv` gerado com ≥ 100 linhas (20 runs × 5 fases). _125 linhas, 1 por episódio (20 random + 5 explore)._
+- [x] `competition/00-investigation.md` responde às 5 perguntas com dados (não apenas opinião).
+- [x] Decisões de modelagem controversas (ex.: number de features, shaping exato, budget) têm base empírica documentada no markdown.
 
 ---
 
@@ -172,6 +172,21 @@ Dependem da Etapa 1 e do `gym` wrapper existente. SB3 já é dependência do pro
 
 ### 4.5 Adaptador para o CompetitionRunner
 - Criar classe wrapper que encapsula um `DQN.load(...)` / `PPO.load(...)` e implementa a interface `Agent` (`act()`, `sense()`) consumindo `ShapedMarioEnv`.
+
+### 4.6 DQN pixels + CNN (9º agente)
+- **Módulo de captura**: `marioai/capture.py::GameWindowCapture` (mss + pygetwindow; fallback Windows via `PrintWindow`). Integrado em `Agent.observe_frame`, `Experiment` e `Runner`. Ver [`docs/04-captura-janela.md`](../docs/04-captura-janela.md).
+- **Ambiente visual**: `marioai/gym/pixel_environment.py::ShapedPixelMarioEnv` — observation = frame capturado (84×84 grayscale uint8), reward shaping herdado de `ShapedMarioEnv`, `FrameStack(num_stack=4)` via `gym.wrappers`.
+- **Agente de inferência**: `marioai/agents/dqn_pixels_agent.py::DqnPixelsAgent` — wrapper sobre `DQN.load(...)` que implementa `observe_frame`/`act` para a interface `Agent`, mantendo deque de 4 frames.
+- **Script de treino**: `competition/agents/dqn_pixels/train.py` (Click CLI, `--total-timesteps` default 200k, `CnnPolicy` = NatureCNN).
+- **Docs**: `competition/agents/dqn_pixels/01-teoria.md` e `02-modelagem.md`.
+- **Dependências**: extra opcional `[capture]` no `pyproject.toml` (mss, pygetwindow, opencv-python, pywin32 em Windows).
+- **Regra de competição**: treino usa `level_seed=42` (qualquer seed fora de `{1001, 2042, 2077, 3013, 3099}`).
+
+Critérios de "pronto" adicionais:
+
+- [ ] `pytest tests/test_capture.py tests/test_pixel_environment.py tests/test_dqn_pixels_agent.py` — tudo verde.
+- [ ] `python -m competition.agents.dqn_pixels.train --total-timesteps 10000` completa sem crash (sanity).
+- [ ] `DqnPixelsAgent` carregado de `.zip` vence a fase 1 com pelo menos `distance > 0` após treino longo.
 
 ### Critério de "pronto"
 

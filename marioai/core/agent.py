@@ -11,9 +11,13 @@ class Agent:
     """Base class for an autonomous agent.
 
     Subclasses override :meth:`act` (and optionally :meth:`sense`,
-    :meth:`give_rewards`) to produce behaviour. Attributes populated by
-    :meth:`sense` mirror the keys of the state dict produced by
-    :class:`marioai.core.Task`.
+    :meth:`observe_frame`, :meth:`give_rewards`) to produce behaviour.
+    Attributes populated by :meth:`sense` mirror the keys of the state dict
+    produced by :class:`marioai.core.Task`.
+
+    Visual agents that need the rendered window pixels override
+    :meth:`observe_frame`; the default implementation is a no-op so existing
+    symbolic agents keep working unchanged.
 
     Attributes:
       level_scene: 22x22 grid of tiles/entities around Mario.
@@ -44,6 +48,15 @@ class Agent:
         self.mario_floats = state['mario_floats']
         self.enemies_floats = state['enemies_floats']
         self.level_scene = state['level_scene']
+
+    def observe_frame(self, frame: np.ndarray | None) -> None:
+        """Receive the latest captured window frame, if any.
+
+        Called by :class:`Experiment` between ``get_sensors`` and ``sense``
+        when a :class:`marioai.capture.GameWindowCapture` is active. ``frame``
+        is ``None`` when capture is disabled or the capture transiently failed.
+        Default implementation is a no-op; pixel-based agents override.
+        """
 
     def act(self) -> list[int]:
         """Return an action as a list of five ints in ``{0, 1}``."""
