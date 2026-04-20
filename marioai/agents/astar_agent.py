@@ -1,6 +1,10 @@
 """A* planner over ``level_scene``.
 
 Modelagem: ``competition/agents/astar/02-modelagem.md``.
+
+O grafo respeita gravidade: uma célula só é "estável" se houver um tile sólido
+logo abaixo. Arestas de andar conectam apenas células estáveis adjacentes;
+cair e pular são arestas explícitas.
 """
 
 from __future__ import annotations
@@ -49,41 +53,103 @@ def _tile_penalty(tile: int) -> int:
     return 0
 
 
+def _cell_passable(scene: np.ndarray, r: int, c: int) -> bool:
+    """Cell where Mario's body can be. Bloqueio próprio + clearance de cabeça."""
+    rows, cols = scene.shape
+    if not (0 <= r < rows and 0 <= c < cols):
+        return False
+    if _is_blocked(int(scene[r, c])):
+        return False
+    if r - 1 >= 0 and _is_blocked(int(scene[r - 1, c])):
+        return False
+    return True
+
+
+def _has_support(scene: np.ndarray, r: int, c: int) -> bool:
+    """True se há sólido logo abaixo (ou fora da janela — assume chão)."""
+    rows, _ = scene.shape
+    if r + 1 >= rows:
+        return True
+    return _is_blocked(int(scene[r + 1, c]))
+
+
+def _is_standable(scene: np.ndarray, r: int, c: int) -> bool:
+    return _cell_passable(scene, r, c) and _has_support(scene, r, c)
+
+
+def _fall_landing(scene: np.ndarray, r_start: int, c: int) -> int | None:
+    """Linha onde Mario pousa ao entrar na coluna ``c`` em ``r_start`` sem suporte.
+
+    Retorna ``None`` se cair para fora da janela (pit mortal).
+    """
+    rows, _ = scene.shape
+    r = r_start
+    while r < rows:
+        if _is_blocked(int(scene[r, c])):
+            return None
+        if _has_support(scene, r, c):
+            return r
+        r += 1
+    return None
+
+
+def _jump_corridor_clear(scene: np.ndarray, r0: int, c0: int, r1: int, c1: int) -> bool:
+    """Corredor em Γ: sobe até apex, atravessa, desce. Simplifica o arco real."""
+    apex = min(r0, r1) - 1 if r0 == r1 else min(r0, r1)
+    apex = max(apex, 0)
+    for r in range(apex, r0 + 1):
+        if not _cell_passable(scene, r, c0):
+            return False
+    for r in range(apex, r1 + 1):
+        if not _cell_passable(scene, r, c1):
+            return False
+    lo, hi = (c0, c1) if c0 <= c1 else (c1, c0)
+    for c in range(lo, hi + 1):
+        if not _cell_passable(scene, apex, c):
+            return False
+    return True
+
+
 def _neighbors(
     scene: np.ndarray,
     node: Cell,
     can_jump: bool,
 ) -> list[tuple[Cell, int]]:
-    rows, cols = scene.shape
     r, c = node
     out: list[tuple[Cell, int]] = []
-    # walk and fall (4-connectivity including vertical drop)
-    for dr, dc in ((0, 1), (0, -1), (1, 0)):
-        nr, nc = r + dr, c + dc
-        if not (0 <= nr < rows and 0 <= nc < cols):
+    rows, cols = scene.shape
+    # andar lateral: a célula alvo precisa ser passável; se sem suporte, cai.
+    for dc in (-1, 1):
+        nc = c + dc
+        if not (0 <= nc < cols):
             continue
-        tile = int(scene[nr, nc])
-        if _is_blocked(tile):
+        if not _cell_passable(scene, r, nc):
             continue
-        cost = WALK_COST + _tile_penalty(tile)
-        out.append(((nr, nc), cost))
-    # jump arcs: up-right/up-left/up within range
+        if _has_support(scene, r, nc):
+            tile = int(scene[r, nc])
+            out.append(((r, nc), WALK_COST + _tile_penalty(tile)))
+        else:
+            landing = _fall_landing(scene, r, nc)
+            if landing is None:
+                continue
+            fall = landing - r
+            tile = int(scene[landing, nc])
+            out.append(((landing, nc), WALK_COST + fall + _tile_penalty(tile)))
+    # arcos de pulo: qualquer célula estável dentro do alcance com corredor livre
     if can_jump:
-        for dr in range(-MAX_JUMP_ROWS, 1):
+        for dr in range(-MAX_JUMP_ROWS, MAX_JUMP_ROWS + 1):
             for dc in range(-MAX_JUMP_COLS, MAX_JUMP_COLS + 1):
-                if dr == 0 and dc == 0:
-                    continue
-                if dr == 0 and abs(dc) == 1:
-                    continue  # already covered as walk
-                if dr == 1 and dc == 0:
-                    continue
+                if dr == 0 and abs(dc) <= 1:
+                    continue  # coberto por andar
                 nr, nc = r + dr, c + dc
                 if not (0 <= nr < rows and 0 <= nc < cols):
                     continue
-                tile = int(scene[nr, nc])
-                if _is_blocked(tile):
+                if not _is_standable(scene, nr, nc):
                     continue
-                cost = JUMP_COST + _tile_penalty(tile)
+                if not _jump_corridor_clear(scene, r, c, nr, nc):
+                    continue
+                tile = int(scene[nr, nc])
+                cost = JUMP_COST + abs(dc) + abs(dr) + _tile_penalty(tile)
                 out.append(((nr, nc), cost))
     return out
 
@@ -92,18 +158,41 @@ def _heuristic(node: Cell, goal: Cell) -> int:
     return abs(node[0] - goal[0]) + abs(node[1] - goal[1])
 
 
+def _find_start(scene: np.ndarray) -> Cell:
+    """Mario é desenhado em ``(PLAYER_POS, PLAYER_POS)``. Se não é estável
+    (ex.: mid-air), procura a primeira célula estável abaixo na coluna."""
+    if _is_standable(scene, PLAYER_POS, PLAYER_POS):
+        return (PLAYER_POS, PLAYER_POS)
+    landing = _fall_landing(scene, PLAYER_POS, PLAYER_POS)
+    if landing is not None:
+        return (landing, PLAYER_POS)
+    return (PLAYER_POS, PLAYER_POS)
+
+
+def _find_goal(scene: np.ndarray, goal_col: int = GOAL_COL) -> Cell:
+    """Célula-alvo: estável na coluna ``goal_col`` mais próxima de ``PLAYER_POS``.
+    Se não houver (coluna inteira é pit), cai de volta em ``(PLAYER_POS, goal_col)``.
+    """
+    rows, cols = scene.shape
+    col = min(max(goal_col, 0), cols - 1)
+    candidates = [r for r in range(rows) if _is_standable(scene, r, col)]
+    if not candidates:
+        return (PLAYER_POS, col)
+    return (min(candidates, key=lambda r: abs(r - PLAYER_POS)), col)
+
+
 def plan(
     level_scene: np.ndarray,
     start: Cell = (PLAYER_POS, PLAYER_POS),
     goal: Cell = (PLAYER_POS, GOAL_COL),
     can_jump: bool = True,
 ) -> list[Cell]:
-    """Classical A* over the tile grid. Returns the path from ``start`` to ``goal`` inclusive.
-
-    Returns an empty list if no path is found.
+    """A* clássico sobre o grafo com gravidade. Para-se ao atingir ``goal[1]``
+    (coluna) — o grafo é orientado à direita e linha exata raramente importa.
     """
     if start == goal:
         return [start]
+    goal_col = goal[1]
     open_heap: list[tuple[int, int, Cell]] = []
     counter = 0
     heapq.heappush(open_heap, (_heuristic(start, goal), counter, start))
@@ -114,7 +203,7 @@ def plan(
         _, _, current = heapq.heappop(open_heap)
         if current in closed:
             continue
-        if current == goal:
+        if current[1] >= goal_col:
             path = [current]
             while path[-1] in came_from:
                 path.append(came_from[path[-1]])
@@ -144,6 +233,9 @@ def path_to_action(current: Cell, next_cell: Cell, can_jump: bool) -> list[int]:
             return JUMP
         return FORWARD_JUMP_SPEED
     if dc > 0:
+        # descer ou andar para a frente; se gap grande vertical, pula
+        if dr >= 2 and can_jump:
+            return FORWARD_JUMP
         return FORWARD
     if dc < 0:
         return BACKWARD
@@ -151,7 +243,7 @@ def path_to_action(current: Cell, next_cell: Cell, can_jump: bool) -> list[int]:
 
 
 class AStarAgent(Agent):
-    """Replans a path every :data:`REPLAN_EVERY` frames and follows it."""
+    """Replaneja a cada :data:`REPLAN_EVERY` frames e segue o plano."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -175,7 +267,9 @@ class AStarAgent(Agent):
         return False
 
     def _plan(self, scene: np.ndarray) -> list[Cell]:
-        return plan(scene, (PLAYER_POS, PLAYER_POS), (PLAYER_POS, GOAL_COL), bool(self.can_jump))
+        start = _find_start(scene)
+        goal = _find_goal(scene, GOAL_COL)
+        return plan(scene, start, goal, bool(self.can_jump))
 
     def act(self) -> list[int]:
         if self.level_scene is None:
@@ -185,6 +279,7 @@ class AStarAgent(Agent):
         self._plan_index = 0
         self._frames_since_plan = 0
         if len(self._plan_path) < 2:
+            # sem plano viável (pit à frente, cercado): tenta pular para a frente
             return FORWARD_JUMP if self.can_jump else FORWARD
         current = self._plan_path[0]
         next_cell = self._plan_path[1]
