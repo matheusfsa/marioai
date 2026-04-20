@@ -36,8 +36,8 @@ WALK_COST = 1
 PLAYER_POS = 11
 GOAL_COL = 21
 REPLAN_EVERY = 12
-MAX_JUMP_COLS = 3
-MAX_JUMP_ROWS = 3
+MAX_JUMP_COLS = 5
+MAX_JUMP_ROWS = 4
 
 
 Cell = tuple[int, int]  # (row, col)
@@ -171,14 +171,16 @@ def _find_start(scene: np.ndarray) -> Cell:
 
 def _find_goal(scene: np.ndarray, goal_col: int = GOAL_COL) -> Cell:
     """Célula-alvo: estável na coluna ``goal_col`` mais próxima de ``PLAYER_POS``.
-    Se não houver (coluna inteira é pit), cai de volta em ``(PLAYER_POS, goal_col)``.
+    Se a coluna for inteiramente pit, tenta progressivamente colunas à esquerda
+    até encontrar uma estável; fallback final é ``(PLAYER_POS, PLAYER_POS + 1)``.
     """
     rows, cols = scene.shape
-    col = min(max(goal_col, 0), cols - 1)
-    candidates = [r for r in range(rows) if _is_standable(scene, r, col)]
-    if not candidates:
-        return (PLAYER_POS, col)
-    return (min(candidates, key=lambda r: abs(r - PLAYER_POS)), col)
+    target = min(max(goal_col, 0), cols - 1)
+    for col in range(target, PLAYER_POS, -1):
+        candidates = [r for r in range(rows) if _is_standable(scene, r, col)]
+        if candidates:
+            return (min(candidates, key=lambda r: abs(r - PLAYER_POS)), col)
+    return (PLAYER_POS, min(PLAYER_POS + 1, cols - 1))
 
 
 def plan(
@@ -226,14 +228,17 @@ def plan(
 def path_to_action(current: Cell, next_cell: Cell, can_jump: bool) -> list[int]:
     dr = next_cell[0] - current[0]
     dc = next_cell[1] - current[1]
+    # subir: arco de pulo para frente ou JUMP vertical
     if dr < 0:
         if not can_jump:
             return FORWARD if dc >= 0 else BACKWARD
         if dc == 0:
             return JUMP
         return FORWARD_JUMP_SPEED
+    # qualquer salto para frente que atravessa gap (dc>1) ou cai forte (dr>=2)
+    if dc > 1 and can_jump:
+        return FORWARD_JUMP_SPEED if dc >= 3 else FORWARD_JUMP
     if dc > 0:
-        # descer ou andar para a frente; se gap grande vertical, pula
         if dr >= 2 and can_jump:
             return FORWARD_JUMP
         return FORWARD
@@ -242,44 +247,58 @@ def path_to_action(current: Cell, next_cell: Cell, can_jump: bool) -> list[int]:
     return FORWARD
 
 
+STUCK_FRAMES = 24
+STUCK_EPSILON = 0.5
+
+
 class AStarAgent(Agent):
-    """Replaneja a cada :data:`REPLAN_EVERY` frames e segue o plano."""
+    """Replaneja todo frame e segue o plano; com stuck-detection."""
 
     def __init__(self) -> None:
         super().__init__()
         self._plan_path: list[Cell] = []
         self._plan_index: int = 0
-        self._frames_since_plan: int = 0
+        self._last_x: float | None = None
+        self._stuck_counter: int = 0
 
     def reset(self) -> None:
         super().reset()
         self._plan_path = []
         self._plan_index = 0
-        self._frames_since_plan = 0
-
-    def _needs_replan(self) -> bool:
-        if not self._plan_path:
-            return True
-        if self._frames_since_plan >= REPLAN_EVERY:
-            return True
-        if self._plan_index >= len(self._plan_path) - 1:
-            return True
-        return False
+        self._last_x = None
+        self._stuck_counter = 0
 
     def _plan(self, scene: np.ndarray) -> list[Cell]:
         start = _find_start(scene)
         goal = _find_goal(scene, GOAL_COL)
         return plan(scene, start, goal, bool(self.can_jump))
 
+    def _update_stuck(self) -> None:
+        mario = self.mario_floats
+        if mario is None:
+            return
+        x = float(mario[0])
+        if self._last_x is None:
+            self._last_x = x
+            return
+        if x - self._last_x < STUCK_EPSILON:
+            self._stuck_counter += 1
+        else:
+            self._stuck_counter = 0
+        self._last_x = x
+
     def act(self) -> list[int]:
         if self.level_scene is None:
             return FORWARD
+        self._update_stuck()
         scene = self.level_scene
+        # se travado há muitos frames, força um pulo para a frente
+        if self._stuck_counter >= STUCK_FRAMES and self.can_jump:
+            self._stuck_counter = 0
+            return FORWARD_JUMP_SPEED
         self._plan_path = self._plan(scene)
         self._plan_index = 0
-        self._frames_since_plan = 0
         if len(self._plan_path) < 2:
-            # sem plano viável (pit à frente, cercado): tenta pular para a frente
             return FORWARD_JUMP if self.can_jump else FORWARD
         current = self._plan_path[0]
         next_cell = self._plan_path[1]

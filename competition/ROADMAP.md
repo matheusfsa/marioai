@@ -111,7 +111,7 @@ Valida o `CompetitionRunner` antes dos agentes que exigem treino.
 ### Critério de "pronto"
 
 - [x] O agente passa pelo `CompetitionRunner` nas 5 fases sem crash. _Validado em `competition/_validate_etapa2.py`: status=0 em todas, distâncias 140–508._
-- [ ] `AStarAgent` vence pelo menos a fase 1 e mostra progresso (distance > RandomAgent) nas fases 2–3. _Refatoração de gravidade aplicada (`_neighbors` agora exige suporte abaixo, modela cair e arcos de pulo Γ). Distâncias após refactor: fase 1 = 604 (+62% vs. 372), fase 3 = 380, fase 4 = 220, fase 5 = 95; fase 2 regrediu para 64. Nenhuma fase vencida (status=0). Tuning dos custos (WALK/JUMP/penalidade de queda) e do goal-finder pendente para destravar fase 2 e fechar vitória na fase 1._
+- [ ] `AStarAgent` vence pelo menos a fase 1 e mostra progresso (distance > RandomAgent) nas fases 2–3. _Refatoração de gravidade + correção do `path_to_action` (gap-jumps agora emitem `FORWARD_JUMP`), stuck-detection (24 frames sem progresso → pulo forçado), goal fallback (procura coluna anterior se a alvo for pit) e alcance de pulo aumentado para 5×4. Distâncias atuais: fase 1 = 604 (+62% vs. 372), fase 2 = 157 (+12% vs. 140), fase 3 = 507, fase 4 = 220, fase 5 = 252 (+80% vs. 140). Nenhuma fase vencida (status=0) — decidimos parar de fazer tuning no A* e seguir para a Etapa 3._
 
 ---
 
