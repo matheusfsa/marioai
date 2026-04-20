@@ -8,7 +8,7 @@ Controle de progresso da competição. As etapas são **sequenciais** (cada uma 
 |---|---|---|
 | 0 | Investigação empírica do servidor | ✅ concluída |
 | 1 | Infraestrutura compartilhada da competição | ✅ concluída |
-| 2 | Agentes sem treino (A*) | 🔄 em andamento |
+| 2 | Agentes sem treino (A*) | 🔄 em andamento (no-crash ok; tuning pendente) |
 | 3 | Agentes tabulares (ε-greedy, MC, SARSA, Q-learning) | ⬜ pendente |
 | 4 | Agentes deep (DQN, PPO) | ⬜ pendente |
 | 5 | Execução da competição e relatório final | ⬜ pendente |
@@ -110,8 +110,8 @@ Valida o `CompetitionRunner` antes dos agentes que exigem treino.
 
 ### Critério de "pronto"
 
-- [ ] O agente passa pelo `CompetitionRunner` nas 5 fases sem crash.
-- [ ] `AStarAgent` vence pelo menos a fase 1 e mostra progresso (distance > RandomAgent) nas fases 2–3.
+- [x] O agente passa pelo `CompetitionRunner` nas 5 fases sem crash. _Validado em `competition/_validate_etapa2.py`: status=0 em todas, distâncias 140–508._
+- [ ] `AStarAgent` vence pelo menos a fase 1 e mostra progresso (distance > RandomAgent) nas fases 2–3. _Gap atual: o planner não modela gravidade (trata ar como andável), então não planeja saltos de pit proativamente. Em fase 1 o agente fica preso em ~372 (abaixo do RandomAgent ~600–1200). Fase 3 (508) já supera um Random estático. Tuning pendente._
 
 ---
 
