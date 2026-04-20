@@ -8,7 +8,7 @@ Controle de progresso da competição. As etapas são **sequenciais** (cada uma 
 |---|---|---|
 | 0 | Investigação empírica do servidor | ✅ concluída |
 | 1 | Infraestrutura compartilhada da competição | ✅ concluída |
-| 2 | Agentes sem treino (rule-based, A*) | ⬜ pendente |
+| 2 | Agentes sem treino (A*) | 🔄 em andamento |
 | 3 | Agentes tabulares (ε-greedy, MC, SARSA, Q-learning) | ⬜ pendente |
 | 4 | Agentes deep (DQN, PPO) | ⬜ pendente |
 | 5 | Execução da competição e relatório final | ⬜ pendente |
@@ -100,14 +100,9 @@ Controle de progresso da competição. As etapas são **sequenciais** (cada uma 
 
 ## Etapa 2 — Agentes sem treino
 
-Podem ser feitos em paralelo. Validam o `CompetitionRunner` antes dos agentes que exigem treino.
+Valida o `CompetitionRunner` antes dos agentes que exigem treino.
 
-### 2.1 Rule-based
-- **Arquivo**: `marioai/agents/rule_based_agent.py`, classe `RuleBasedAgent(ExploratoryAgent)`.
-- **Override**: apenas `act()` com a cadeia de regras documentada em `competition/agents/rule_based/02-modelagem.md`.
-- **Teste**: `tests/test_rule_based.py` — verifica que cada branch de regra dispara na condição certa (mockar `self.state`).
-
-### 2.2 A*
+### 2.1 A*
 - **Arquivo**: `marioai/agents/astar_agent.py`, classe `AStarAgent(Agent)`.
 - **Helpers internos**: `_plan(level_scene)` retornando lista de `(row, col)`; `_path_to_action(next_cell)`.
 - **Cache**: invalidar a cada 12 frames ou ao desviar da célula prevista.
@@ -115,8 +110,7 @@ Podem ser feitos em paralelo. Validam o `CompetitionRunner` antes dos agentes qu
 
 ### Critério de "pronto"
 
-- [ ] Ambos os agentes passam pelo `CompetitionRunner` nas 5 fases sem crash.
-- [ ] `RuleBasedAgent` vence pelo menos a fase 1 (fácil) em > 80% das execuções determinísticas.
+- [ ] O agente passa pelo `CompetitionRunner` nas 5 fases sem crash.
 - [ ] `AStarAgent` vence pelo menos a fase 1 e mostra progresso (distance > RandomAgent) nas fases 2–3.
 
 ---

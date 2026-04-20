@@ -1,9 +1,17 @@
+from .astar_agent import AStarAgent
 from .base_agent import BaseAgent
 from .exploratory_agent import ExploratoryAgent
 from .monte_carlo_agent import MonteCarloAgent
 from .random_agent import RandomAgent
 
-__all__ = ['BaseAgent', 'DqnPixelsAgent', 'ExploratoryAgent', 'MonteCarloAgent', 'RandomAgent']
+__all__ = [
+    'AStarAgent',
+    'BaseAgent',
+    'DqnPixelsAgent',
+    'ExploratoryAgent',
+    'MonteCarloAgent',
+    'RandomAgent',
+]
 
 
 def __getattr__(name: str):

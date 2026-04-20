@@ -52,11 +52,11 @@ obstáculos distintos (castle com Mario large vs random com Mario
 small). Mas como random nunca vence, só saberemos com A*/DQN testados
 se elas realmente admitem vitória.
 
-**Recomendação**: manter as fases como estão. A Etapa 2 (rule-based,
-A*) vai servir como segundo ponto de calibração — se nem rule-based
-vencer a 1-easy, abrir issue para trocar `level_seed=1001` ou relaxar
+**Recomendação**: manter as fases como estão. A Etapa 2 (A*) vai
+servir como segundo ponto de calibração — se nem o A* vencer a
+1-easy, abrir issue para trocar `level_seed=1001` ou relaxar
 `time_limit=60`. Do contrário, a violação do critério "random > 0%" é
-aceitável: rule-based deve vencer trivialmente.
+aceitável: o A* deve vencer trivialmente.
 
 ### 2. O desempate por `time_left` é informativo?
 
@@ -70,8 +70,8 @@ determinístico dadas seed e ações, mesmo `distance` implica mesmo
 **Risco**: dois agentes determinísticos ganhando a mesma fase na
 mesma trajetória podem empatar em `time_left` também, tornando o
 desempate de 1º nível uma no-op. Fica como item para a Etapa 2 —
-comparar `time_left` de `RuleBasedAgent` vs `AStarAgent` vencendo a
-mesma fase.
+comparar `time_left` do `AStarAgent` contra agentes tabulares
+vencendo a mesma fase.
 
 **Recomendação**: **manter o desempate** (é barato) e adicionar
 `distance` como 2º desempate conforme já previsto no README.
@@ -102,7 +102,7 @@ Pontos críticos:
 - **`brick_1` e `brick_2` são sempre `False`** nas 5 fases. Os tiles
   16/21 (bricks) não aparecem na coluna próxima a Mario em nenhum
   nível. **Descartar as duas features** — só adicionam ramificações
-  inúteis na Q-table e no estado do rule-based.
+  inúteis na Q-table e no estado dos agentes tabulares.
 - **`soft_1`/`soft_2`** só disparam na 1-easy (blocos-de-item do
   overground com seed baixa). Nas outras fases são 0%. **Manter
   apenas para agentes tabulares** — útil para explicar comportamento
@@ -115,7 +115,7 @@ Pontos críticos:
   indicar que a heurística de detecção em `sensing.has_role_near` não
   está calibrada para os tipos `2`/`3` (castle/random), ou que os
   níveis realmente não têm muitos buracos. Investigar na Etapa 2
-  quando o rule-based começar a perder por cair em buracos.
+  quando o A* começar a perder por cair em buracos.
 - **`hard_1`**: 95% na 5-hard-B — Mario fica quase sempre encostado
   em parede no nível random. Isso explica por que ele trava em
   distance=251. Feature útil (é o sinal que dispara a regra "pular
@@ -244,13 +244,13 @@ Etapa 4 se quisermos rodar múltiplos DQN/PPO em paralelo.
 1. **Descartar `brick_1` e `brick_2`** do estado compartilhado em
    `marioai/agents/utils/state.py` (Etapa 3). Atualizar
    `agents/*/02-modelagem.md` de MC/SARSA/Q-learning/ε-greedy para
-   refletir a tupla reduzida. (Rule-based já não usa bricks.)
+   refletir a tupla reduzida.
 2. **Considerar colapsar `projetil_1 | projetil_2`** em uma única
    feature `projetil_near`. Decisão final na Etapa 3 — compare Q-table
    size antes/depois.
-3. **Manter as 5 fases atuais.** Rever apenas `1-easy` se o
-   rule-based também não vencê-la (Etapa 2) — candidato a trocar
-   `level_seed=1001` para algo que até o rule-based ganhe.
+3. **Manter as 5 fases atuais.** Rever apenas `1-easy` se o A*
+   também não vencê-la (Etapa 2) — candidato a trocar
+   `level_seed=1001` para algo que ao menos o A* ganhe.
 4. **`n_samples=2000` para Monte Carlo é factível** (~1 h por fase).
    Orçamento de treino da Etapa 3 confirmado.
 5. **Paralelização de treinos deep (Etapa 4) não é trivial** por
@@ -260,7 +260,7 @@ Etapa 4 se quisermos rodar múltiplos DQN/PPO em paralelo.
    diagnóstico futuro — o hash do primeiro frame é insuficiente para
    provar diferença de seeds.
 7. **Desempate por `time_left`** permanece mas precisa ser validado
-   na Etapa 2 com rule-based/A* vencendo a mesma fase.
+   na Etapa 2 com o A* vencendo a mesma fase.
 
 ## Artefatos
 

@@ -1,6 +1,6 @@
 # Competição de Agentes MarioAI
 
-Competição entre **9 agentes** que implementam técnicas distintas de tomada de decisão — do rule-based clássico a RL profundo com visão — avaliados num mesmo conjunto de 5 fases reprodutíveis.
+Competição entre **8 agentes** que implementam técnicas distintas de tomada de decisão — do planejamento clássico a RL profundo com visão — avaliados num mesmo conjunto de 5 fases reprodutíveis.
 
 O foco desta pasta é **documentação e modelagem**. Cada agente tem dois markdowns:
 
@@ -13,15 +13,14 @@ A implementação dos agentes e do runner da competição será feita em PRs fut
 
 | # | Técnica | Paradigma | Pasta |
 |---|---|---|---|
-| 1 | Rule-based | Heurística (sem treino) | [`agents/rule_based/`](agents/rule_based/) |
-| 2 | A* | Planejamento clássico | [`agents/astar/`](agents/astar/) |
-| 3 | ε-greedy com features | RL tabular simples | [`agents/epsilon_greedy/`](agents/epsilon_greedy/) |
-| 4 | Monte Carlo control | RL tabular | [`agents/monte_carlo/`](agents/monte_carlo/) |
-| 5 | SARSA | RL tabular on-policy | [`agents/sarsa/`](agents/sarsa/) |
-| 6 | Q-learning | RL tabular off-policy | [`agents/q_learning/`](agents/q_learning/) |
-| 7 | DQN | RL profundo (valor, simbólico) | [`agents/dqn/`](agents/dqn/) |
-| 8 | PPO | RL profundo (policy) | [`agents/ppo/`](agents/ppo/) |
-| 9 | DQN pixels + CNN | RL profundo (valor, visão) | [`agents/dqn_pixels/`](agents/dqn_pixels/) |
+| 1 | A* | Planejamento clássico | [`agents/astar/`](agents/astar/) |
+| 2 | ε-greedy com features | RL tabular simples | [`agents/epsilon_greedy/`](agents/epsilon_greedy/) |
+| 3 | Monte Carlo control | RL tabular | [`agents/monte_carlo/`](agents/monte_carlo/) |
+| 4 | SARSA | RL tabular on-policy | [`agents/sarsa/`](agents/sarsa/) |
+| 5 | Q-learning | RL tabular off-policy | [`agents/q_learning/`](agents/q_learning/) |
+| 6 | DQN | RL profundo (valor, simbólico) | [`agents/dqn/`](agents/dqn/) |
+| 7 | PPO | RL profundo (policy) | [`agents/ppo/`](agents/ppo/) |
+| 8 | DQN pixels + CNN | RL profundo (valor, visão) | [`agents/dqn_pixels/`](agents/dqn_pixels/) |
 
 ## Regras da competição
 
@@ -36,7 +35,7 @@ A implementação dos agentes e do runner da competição será feita em PRs fut
 - Agentes estocásticos entram em modo determinístico:
   - Tabulares: `policy_kind = 'greedy'` (ou `epsilon = 0`).
   - `stable_baselines3`: `model.predict(obs, deterministic=True)`.
-  - A* e rule-based já são determinísticos.
+  - A* já é determinístico.
 - O runner da competição é responsável por garantir que `Environment.level_seed`, `level_difficulty`, `level_type`, `init_mario_mode` e `time_limit` sigam exatamente a tabela antes de cada `reset()`.
 
 ## As 5 fases de avaliação
@@ -116,6 +115,7 @@ def evaluate(agent):
 ```
 
 A agregação final classifica os 8 agentes pelas regras da seção "Critério de vitória".
+
 
 ## Referências
 
