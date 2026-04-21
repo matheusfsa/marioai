@@ -1,55 +1,17 @@
 from __future__ import annotations
 
+import pickle
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 from tqdm import tqdm
 
 from marioai.agents.base_agent import BaseAgent
+from marioai.agents.utils import State
 from marioai.core import Runner, Task
 
 __all__ = ['MonteCarloAgent']
-
-
-class State:
-    """Hashable wrapper around a dict so it can be used as a ``_Q`` key."""
-
-    def __init__(self, **kwargs: Any) -> None:
-        self.state_attrs: list[str] = []
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-            self.state_attrs.append(key)
-
-    def __repr__(self) -> str:
-        parts = [f'{attr}={getattr(self, attr)}' for attr in self.state_attrs]
-        return 'State(' + ', '.join(parts) + ')'
-
-    def __hash__(self) -> int:
-        values = []
-        for attr in self.state_attrs:
-            value = getattr(self, attr)
-            if isinstance(value, np.ndarray):
-                values.append(value.tobytes())
-            elif isinstance(value, list):
-                values.append(tuple(value))
-            else:
-                values.append(value)
-        return hash(tuple(values))
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, State):
-            return NotImplemented
-        if self.state_attrs != other.state_attrs:
-            return False
-        for attr in self.state_attrs:
-            a = getattr(self, attr)
-            b = getattr(other, attr)
-            if isinstance(a, np.ndarray) or isinstance(b, np.ndarray):
-                if np.any(a != b):
-                    return False
-            elif a != b:
-                return False
-        return True
 
 
 class MonteCarloAgent(BaseAgent):
@@ -153,6 +115,33 @@ class MonteCarloAgent(BaseAgent):
         self.in_fit = False
         self.policy_kind = 'greedy'
         return self
+
+    def save(self, path: str | Path) -> None:
+        """Serialize the Q-table (and counts) to ``path`` via pickle."""
+        payload = {
+            'Q': self._Q,
+            'N': self._N,
+            'action_pool': self._action_pool,
+            'discount': self.discount,
+            'n_samples': self.n_samples,
+        }
+        with open(path, 'wb') as f:
+            pickle.dump(payload, f)
+
+    @classmethod
+    def load(cls, path: str | Path) -> MonteCarloAgent:
+        """Load an agent previously saved with :meth:`save`. Policy is greedy."""
+        with open(path, 'rb') as f:
+            payload = pickle.load(f)
+        agent = cls(
+            n_samples=payload['n_samples'],
+            discount=payload['discount'],
+        )
+        agent._Q = payload['Q']
+        agent._N = payload['N']
+        agent._action_pool = payload['action_pool']
+        agent.policy_kind = 'greedy'
+        return agent
 
     def _step(self) -> float:
         rewards = np.array([self.compute_reward(r) for r in self.rewards])
