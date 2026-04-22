@@ -8,7 +8,7 @@ import numpy as np
 from tqdm import tqdm
 
 from marioai.agents.base_agent import BaseAgent
-from marioai.agents.utils import State
+from marioai.agents.utils import TABULAR_STATE_KEYS, State
 from marioai.core import Runner, Task
 
 __all__ = ['MonteCarloAgent']
@@ -83,9 +83,13 @@ class MonteCarloAgent(BaseAgent):
         self.actions_idx.append(action_idx)
         return action_idx
 
+    @staticmethod
+    def _state_key(obs: dict[str, Any]) -> State:
+        return State(**{k: bool(obs.get(k)) for k in TABULAR_STATE_KEYS})
+
     def act(self) -> list[int]:
         action_pool = self.filter_actions()
-        state = State(**self.state)
+        state = self._state_key(self.state)
         if state not in self._Q:
             self._Q[state] = np.zeros(action_pool.shape[0])
         action_idx = self.policy(state, action_pool.shape[0])
@@ -146,7 +150,7 @@ class MonteCarloAgent(BaseAgent):
     def _step(self) -> float:
         rewards = np.array([self.compute_reward(r) for r in self.rewards])
         for i, (state_dict, action) in enumerate(zip(self.states, self.actions_idx, strict=False)):
-            state = State(**state_dict)
+            state = self._state_key(state_dict)
             if state not in self._N:
                 self._N[state] = np.zeros(self._Q[state].shape[0])
             self._N[state][action] += 1
