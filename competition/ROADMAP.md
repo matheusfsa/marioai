@@ -9,7 +9,7 @@ Controle de progresso da competição. As etapas são **sequenciais** (cada uma 
 | 0 | Investigação empírica do servidor | ✅ concluída |
 | 1 | Infraestrutura compartilhada da competição | ✅ concluída |
 | 2 | Agentes sem treino (A*) | 🔄 em andamento (gravidade modelada; tuning de custos pendente) |
-| 3 | Agentes tabulares (ε-greedy, MC, SARSA, Q-learning) | ⬜ pendente |
+| 3 | Agentes tabulares (ε-greedy, MC, SARSA, Q-learning) | 🔄 em andamento (MC + ε-greedy + Q-learning prontos; SARSA pendente) |
 | 4 | Agentes deep (DQN, PPO) | ⬜ pendente |
 | 5 | Execução da competição e relatório final | ⬜ pendente |
 
